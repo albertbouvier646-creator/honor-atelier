@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 import appCss from "../styles.css?url";
 import { reportAppError } from "../lib/error-reporting";
@@ -143,6 +144,7 @@ function RootComponent() {
           <Outlet />
           <CookieConsent />
           <Toaster position="top-right" />
+          <Analytics />
         </AuthProvider>
       </I18nProvider>
     </QueryClientProvider>
