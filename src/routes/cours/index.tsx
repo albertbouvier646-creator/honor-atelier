@@ -19,6 +19,7 @@ import { toast } from "sonner";
 
 import { PageShell } from "@/components/PageShell";
 import { COURSES, EBOOKS, PATTERNS, formatEur } from "@/lib/catalog";
+import { useCart } from "@/lib/cart-context";
 
 export const Route = createFileRoute("/cours/")({
   head: () => ({
@@ -43,13 +44,7 @@ export const Route = createFileRoute("/cours/")({
 
 function CoursIndex() {
   const [activeTab, setActiveTab] = useState<"cours" | "ebooks" | "patrons">("cours");
-
-  const handleBuyDownloadable = (itemTitle: string, price: number) => {
-    toast.success(`Votre commande de "${itemTitle}" (${formatEur(price)}) est enregistrée !`, {
-      description: "Le lien de téléchargement PDF sécurisé a été transmis par email.",
-      duration: 5000,
-    });
-  };
+  const { addItem } = useCart();
 
   return (
     <PageShell>
@@ -308,10 +303,19 @@ function CoursIndex() {
                           <span className="font-serif text-2xl text-ink font-light">{formatEur(eb.prixEur)}</span>
                         </div>
                         <button
-                          onClick={() => handleBuyDownloadable(eb.titre, eb.prixEur)}
+                          onClick={() =>
+                            addItem({
+                              id: `ebook-${eb.slug}`,
+                              slug: eb.slug,
+                              type: "ebook",
+                              titre: eb.titre,
+                              image: eb.couvertureImage,
+                              prixEur: eb.prixEur,
+                            })
+                          }
                           className="inline-flex items-center gap-2 px-5 py-3 bg-ink text-canvas text-[10px] uppercase tracking-[0.2em] hover:bg-accent transition-colors"
                         >
-                          <Download className="size-3.5" /> Télécharger
+                          <ShoppingBag className="size-3.5" /> Ajouter au panier
                         </button>
                       </div>
                     </div>
@@ -366,10 +370,19 @@ function CoursIndex() {
                       <li>Éviter de placer l'ouverture près d'un angle pour une fermeture parfaite.</li>
                     </ul>
                     <button
-                      onClick={() => handleBuyDownloadable("Tutoriel Pas-à-Pas Coussin Passepoilé", 9)}
-                      className="w-full py-3.5 bg-accent text-canvas text-[10px] uppercase tracking-[0.2em] font-semibold hover:bg-ink transition-colors shadow-sm"
+                      onClick={() =>
+                        addItem({
+                          id: "tuto-coussin-passepoil-direct",
+                          slug: "tuto-coussin-passepoil",
+                          type: "ebook",
+                          titre: "Tutoriel Pas-à-Pas Coussin Passepoilé",
+                          image: boutiqueNappes,
+                          prixEur: 9,
+                        })
+                      }
+                      className="w-full py-3.5 bg-accent text-canvas text-[10px] uppercase tracking-[0.2em] font-semibold hover:bg-ink transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
-                      Obtenir le Tutoriel Complet (PDF + Schémas) — 9 €
+                      <ShoppingBag className="size-3.5" /> Ajouter au panier — 9 €
                     </button>
                   </div>
                 </div>
@@ -433,10 +446,19 @@ function CoursIndex() {
                           <span className="font-serif text-3xl text-ink font-light">{formatEur(pt.prixEur)}</span>
                         </div>
                         <button
-                          onClick={() => handleBuyDownloadable(`Patron ${pt.nom}`, pt.prixEur)}
+                          onClick={() =>
+                            addItem({
+                              id: `patron-${pt.slug}`,
+                              slug: pt.slug,
+                              type: "patron",
+                              titre: pt.nom,
+                              image: pt.image,
+                              prixEur: pt.prixEur,
+                            })
+                          }
                           className="inline-flex items-center gap-2 px-6 py-3.5 bg-ink text-canvas text-[10px] uppercase tracking-[0.2em] hover:bg-accent transition-colors shadow-sm"
                         >
-                          <ShoppingBag className="size-3.5" /> Obtenir le Patron
+                          <ShoppingBag className="size-3.5" /> Ajouter au panier
                         </button>
                       </div>
                     </div>

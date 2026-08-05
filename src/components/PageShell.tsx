@@ -1,18 +1,20 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { Menu, X, User as UserIcon } from "lucide-react";
+import { Menu, X, User as UserIcon, ShoppingBag } from "lucide-react";
 
 import { SiteFooter } from "./SiteFooter";
 import { LanguageSelector } from "./LanguageSelector";
 import { HonorLogo } from "./HonorLogo";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
+import { useCart } from "@/lib/cart-context";
 
 export function SiteNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { t } = useI18n();
   const { user } = useAuth();
+  const { itemCount, setIsCartOpen } = useCart();
 
   const links = [
     { to: "/", label: t("nav_home") },
@@ -22,7 +24,7 @@ export function SiteNav() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-canvas/95 backdrop-blur-md border-b border-ink/5 transition-all">
+    <header className="sticky top-0 z-40 bg-canvas/95 backdrop-blur-md border-b border-ink/5 transition-all">
       <nav className="max-w-7xl mx-auto flex items-center justify-between px-6 lg:px-8 py-4.5">
         <Link to="/" className="group">
           <HonorLogo size="md" />
@@ -57,6 +59,20 @@ export function SiteNav() {
         <div className="hidden md:flex items-center gap-4">
           <LanguageSelector />
 
+          {/* Cart Trigger */}
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="relative p-2 text-ink/80 hover:text-accent transition-colors inline-flex items-center gap-1.5"
+            title="Voir le panier"
+          >
+            <ShoppingBag className="size-5" />
+            {itemCount > 0 && (
+              <span className="bg-accent text-canvas text-[10px] font-bold font-mono px-1.5 py-0.2 rounded-full min-w-[1.25rem] text-center">
+                {itemCount}
+              </span>
+            )}
+          </button>
+
           {/* Client space link */}
           <Link
             to="/espace-client"
@@ -78,8 +94,19 @@ export function SiteNav() {
           </Link>
         </div>
 
-        {/* Mobile Menu Toggle & Language Selector */}
-        <div className="flex items-center gap-2.5 md:hidden">
+        {/* Mobile Menu Toggle & Cart */}
+        <div className="flex items-center gap-2 md:hidden">
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="relative p-2 text-ink hover:text-accent transition-colors"
+          >
+            <ShoppingBag className="size-5" />
+            {itemCount > 0 && (
+              <span className="absolute top-0 right-0 bg-accent text-canvas text-[9px] font-bold font-mono px-1 rounded-full">
+                {itemCount}
+              </span>
+            )}
+          </button>
           <LanguageSelector />
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

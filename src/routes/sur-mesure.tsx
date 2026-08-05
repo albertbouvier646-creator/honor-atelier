@@ -12,30 +12,33 @@ import {
   formatEur,
 } from "@/lib/catalog";
 
+import { useCart } from "@/lib/cart-context";
+
 export const Route = createFileRoute("/sur-mesure")({
   head: () => ({
     meta: [
-      { title: "Commande sur mesure — nappes & vêtements | HONOR" },
+      { title: "Atelier Sur Commande & Sur Mesure — HONOR" },
       {
         name: "description",
         content:
-          "Composez votre pièce HONOR : nappe ou vêtement, tissu d'exception, dimensions, finitions et monogramme, avec récapitulatif avant validation.",
+          "Configurez votre pièce sur mesure HONOR : choix de l'étoffe (lin belge, popeline bio, soie), des finitions brodées et monogramme personnalisé.",
       },
-      { property: "og:title", content: "Commande sur mesure — nappes & vêtements | HONOR" },
+      { property: "og:title", content: "Atelier Sur Commande & Sur Mesure — HONOR" },
       {
         property: "og:description",
-        content: "Choix du tissu, personnalisation et récapitulatif de votre commande d'atelier.",
+        content: "Configuration et commande sur mesure d'exception chez HONOR.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: SurMesure,
+  component: SurMesurePage,
 });
 
 const STEPS = ["Pièce", "Tissu", "Personnalisation", "Récapitulatif"];
 
-function SurMesure() {
+function SurMesurePage() {
+  const { addItem } = useCart();
   const [step, setStep] = useState(0);
   const [itemSlug, setItemSlug] = useState(MADE_TO_ORDER[0]!.slug);
   const [fabricId, setFabricId] = useState(FABRICS[0]!.id);
