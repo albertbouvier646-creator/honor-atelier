@@ -3,15 +3,19 @@ import coursChemisier from "@/assets/cours-chemisier.jpg";
 import coursMatieres from "@/assets/cours-matieres.jpg";
 import boutiqueNappes from "@/assets/boutique-nappes.jpg";
 
+export type CourseLevel = "Débutant" | "Intermédiaire" | "Tous niveaux" | "Projet Personnel";
+
 export type Course = {
   slug: string;
   titre: string;
+  subtitre: string;
   resume: string;
   image: string;
-  niveau: string;
+  niveau: CourseLevel;
   lecons: number;
   duree: string;
   prixEur: number;
+  fournituresIncluses: boolean;
   prochaineSession: string;
   places: number;
   format: string;
@@ -19,80 +23,139 @@ export type Course = {
   inclus: string[];
 };
 
+export type Ebook = {
+  slug: string;
+  titre: string;
+  pages: number;
+  resume: string;
+  prixEur: number;
+  badge: string;
+  couvertureImage: string;
+  sommaire: string[];
+  extraits: string[];
+};
+
+export type Pattern = {
+  slug: string;
+  nom: string;
+  type: string;
+  description: string;
+  prixEur: number;
+  niveau: string;
+  tailles: string;
+  versions: string;
+  caracteristiques: string[];
+  image: string;
+};
+
+// --- COURS INDIVIDUELS & FORMATIONS ---
 export const COURSES: Course[] = [
   {
-    slug: "nappe-festonnee",
-    titre: "Maîtrise de la Nappe Festonnée",
+    slug: "bases-couture-machine",
+    titre: "1. Apprendre les Bases & Prise en Main Machine",
+    subtitre: "Initiation complète à la machine à coudre & premier projet",
     resume:
-      "Le vocabulaire complet de la nappe d'apparat : coupe au fil droit, festons réguliers, finitions invisibles sur lin belge.",
-    image: coursNappe,
-    niveau: "Intermédiaire",
-    lecons: 12,
-    duree: "9 h de vidéo",
-    prixEur: 290,
-    prochaineSession: "Session du 14 septembre 2026",
-    places: 18,
-    format: "Vidéos HD à vie + 3 ateliers live en visio",
-    programme: [
-      "Lecture du fil, décatissage et préparation du lin",
-      "Tracé et calibrage des festons au compas",
-      "Ourlets à la main : point de bourdon et point d'ombre",
-      "Broderie de monogramme et repassage d'apparat",
-    ],
-    inclus: [
-      "Patrons imprimables 3 tailles de table",
-      "Fiche de sourcing des lins belges",
-      "Corrections personnalisées de vos photos",
-    ],
-  },
-  {
-    slug: "chemisier-signature",
-    titre: "Confection du Chemisier Signature",
-    resume:
-      "Un chemisier architectural, du patronage à la boutonnière brodée, dans une popeline de coton d'exception.",
-    image: coursChemisier,
-    niveau: "Avancé",
-    lecons: 18,
-    duree: "14 h de vidéo",
-    prixEur: 420,
-    prochaineSession: "Session du 5 octobre 2026",
-    places: 12,
-    format: "Vidéos HD à vie + 5 ateliers live en visio",
-    programme: [
-      "Prise de mesures et ajustement du buste",
-      "Col et pied de col : montage impeccable",
-      "Emmanchures, manches et poignets mousquetaire",
-      "Boutonnières, finitions et pressage final",
-    ],
-    inclus: [
-      "Patron numérique gradé du 34 au 48",
-      "Suivi d'ajustement individuel",
-      "Accès au cercle privé des élèves HONOR",
-    ],
-  },
-  {
-    slug: "matieres-nobles",
-    titre: "Les Secrets des Matières Nobles",
-    resume:
-      "Comprendre, choisir et respecter les étoffes : soies, lins, cotons biologiques et laines fines.",
+      "Le cours d'initiation idéal pour débutants : matériel, enfilage, réglages de tension, assemblage et réalisation d’un lot de lingettes lavables (point droit, zig-zag, point d’arrêt et couture main).",
     image: coursMatieres,
-    niveau: "Tous niveaux",
-    lecons: 6,
-    duree: "4 h de vidéo",
-    prixEur: 140,
-    prochaineSession: "Accès immédiat, en autonomie",
-    places: 100,
-    format: "Vidéos HD à vie + dossier textile PDF",
+    niveau: "Débutant",
+    lecons: 4,
+    duree: "2h individuelles",
+    prixEur: 65,
+    fournituresIncluses: true,
+    prochaineSession: "Sur RDV individuel",
+    places: 1,
+    format: "Face-à-face à l'Atelier ou visio directe",
     programme: [
-      "Fibres, armures et comportements de tombé",
-      "Tests de résistance, de teinture et d'entretien",
-      "Sourcing responsable et traçabilité",
-      "Constituer sa bibliothèque d'échantillons",
+      "Découverte et prise en main de la machine à coudre",
+      "Maîtrise des réglages : tension du fil, choix du point et longueur",
+      "Entraînement aux coutures droites, arrondies et points d'arrêt",
+      "Confection guidée de lingettes lavables écologiques",
     ],
     inclus: [
-      "Dossier textile HONOR de 60 pages",
-      "Liste de nos maisons de tissus partenaires",
-      "Quiz de certification interne",
+      "Toutes les fournitures (tissus bio GOTS, fil, machine à disposition)",
+      "Fiche mémo des réglages machine",
+      "Accès aux tutoriels vidéo de révision",
+    ],
+  },
+  {
+    slug: "chouchou-masque-nuit",
+    titre: "2. Coudre un Chouchou ou Masque de Nuit de Luxe",
+    subtitre: "Apprivoiser les courbes, élastiques et patrons",
+    resume:
+      "Apprenez à décalquer un patron, suivre un pas-à-pas, réaliser des coutures arrondies précises et insérer proprement un élastique.",
+    image: coursNappe,
+    niveau: "Débutant",
+    lecons: 4,
+    duree: "2h individuelles",
+    prixEur: 70,
+    fournituresIncluses: true,
+    prochaineSession: "Sur RDV individuel",
+    places: 1,
+    format: "Face-à-face à l'Atelier ou visio directe",
+    programme: [
+      "Report et décalquage des pièces de patron",
+      "Technique de piquée sur lignes courbes et rentrés",
+      "Insertion et fixation solide de l'élastique",
+      "Finitions soignées et repassage professionnel",
+    ],
+    inclus: [
+      "Soie ou coton bio + élastique fournis",
+      "Patron papier réutilisable offert",
+      "Conseils personnalisés",
+    ],
+  },
+  {
+    slug: "etui-lunettes-double",
+    titre: "3. Coudre un Étui à Lunettes Doublé & Thermocollé",
+    subtitre: "Maîtriser les doublures, le thermocollant et les pressions",
+    resume:
+      "Découvrez la technique pour doubler un accessoire, appliquer un entoilage thermocollant pour la tenue et poser un bouton pression avec finitions invisibles.",
+    image: boutiqueNappes,
+    niveau: "Débutant",
+    lecons: 5,
+    duree: "2h individuelles",
+    prixEur: 75,
+    fournituresIncluses: true,
+    prochaineSession: "Sur RDV individuel",
+    places: 1,
+    format: "Face-à-face à l'Atelier ou visio directe",
+    programme: [
+      "Pose du thermocollant pour donner de la structure",
+      "Assemblage endroit contre endroit de la doublure",
+      "Retournement par l'ouverture et fermeture en point invisible",
+      "Pose de la fermeture à bouton pression",
+    ],
+    inclus: [
+      "Tissus, molleton, thermocollant et pression fournis",
+      "Guide des finitions invisibles",
+      "Accès aux questions post-cours",
+    ],
+  },
+  {
+    slug: "accompagnement-projet-personnel",
+    titre: "4. Accompagnement Projet Personnel Sur-Mesure",
+    subtitre: "Cousez le vêtement de vos rêves guidé pas-à-pas",
+    resume:
+      "Venez avec votre patron et votre tissu (ou votre propre machine) : nous vous accompagnons sur l'ajustement morphologique, la découpe et la réalisation (veste, robe, pantalon, jersey, surjeteuse...).",
+    image: coursChemisier,
+    niveau: "Intermédiaire",
+    lecons: 8,
+    duree: "Forfait 4h ou 6h au choix",
+    prixEur: 160,
+    fournituresIncluses: false,
+    prochaineSession: "Sur RDV individuel / Stages week-end",
+    places: 1,
+    format: "Session individuelle à l'Atelier",
+    programme: [
+      "Prise de mesures et ajustement du patron à votre morphologie",
+      "Placement sur le droit-fil et découpe optimisée",
+      "Montage technique : col, zip invisible, poches, mailles à la surjeteuse",
+      "Reassort des finitions de qualité professionnelle haute couture",
+    ],
+    inclus: [
+      "Accès à tout le parc machine (surjeteuse, repassage vapeur pro)",
+      "Mercerie de dépannage & fils de qualité",
+      "Astuces morpho et modélisme personnalisées",
     ],
   },
 ];
@@ -100,6 +163,127 @@ export const COURSES: Course[] = [
 export function getCourse(slug: string) {
   return COURSES.find((c) => c.slug === slug);
 }
+
+// --- EBOOKS ET TUTORIELS PAS-À-PAS ---
+export const EBOOKS: Ebook[] = [
+  {
+    slug: "ebook-couture-engagee",
+    titre: "Ebook Interactif : La Couture Engagée & Garde-Robe Durable",
+    pages: 38,
+    resume:
+      "Le guide de référence pour apprendre à coudre de manière raisonnée et responsable : choix du matériel, 8 erreurs de débutant à éviter, tissus GOTS, mercerie éco-responsable et ajustements morphologiques.",
+    prixEur: 19,
+    badge: "Ebook Best-Seller PDF",
+    couvertureImage: coursMatieres,
+    sommaire: [
+      "Partie 1 : Introduction à la couture, choix de la machine & mercerie indispensable",
+      "Partie 2 : Les 8 erreurs à éviter quand on débute & le vocabulaire clé",
+      "Partie 3 : La couture engagée (Tissus bio certifiés GOTS, lin, mercerie éco-responsable)",
+      "Partie 4 : Adapter un patron à sa morphologie (poitrine, taille, hanches)",
+      "Partie 5 : La couture zéro-déchet & recycler les vêtements de son dressing",
+    ],
+    extraits: [
+      "« Chaque point est une promesse de durabilité. Coudre moins mais coudre mieux. »",
+      "« Astuce pro : Toujours décalquer son patron sur papier cuisson et repasser chaque couture ! »",
+    ],
+  },
+  {
+    slug: "tuto-coussin-passepoil",
+    titre: "Tutoriel Pas-à-Pas : Le Coussin Ergonomique & Son Passepoil",
+    pages: 12,
+    resume:
+      "Apprenez à confectionner un coussin élégant avec passepoil assorti et finitions invisibles à la main. Idéal pour recycler vos chutes de tissu et perfectionner la pose de bordures.",
+    prixEur: 9,
+    badge: "Tuto Pas-à-Pas PDF",
+    couvertureImage: boutiqueNappes,
+    sommaire: [
+      "Liste des fournitures (coupons 25x35cm, passepoil 125cm, ouate)",
+      "Étape 1 : Positionner & épingler le passepoil dans les angles",
+      "Étape 2 : Piquer le passepoil avec le bon pied presseur",
+      "Étape 3 : Assemblage endroit contre endroit & réservation",
+      "Étape 4 : Garnissage et fermeture invisible au point à la main",
+    ],
+    extraits: [
+      "« Le secret du passepoil réussi : arrondir légèrement les angles et repasser sur l'envers ! »",
+    ],
+  },
+  {
+    slug: "tuto-duo-zero-dechet",
+    titre: "Tutoriel Pas-à-Pas : Le Duo Zéro-Déchet (Lingettes & Pochon)",
+    pages: 8,
+    resume:
+      "Transformez vos petites chutes de coton bio et de molleton en lingettes démaquillantes lavables et pochons à coulisse indispensables au quotidien.",
+    prixEur: 7,
+    badge: "Guide Rapide PDF",
+    couvertureImage: coursNappe,
+    sommaire: [
+      "Optimiser et découper les chutes de tissu",
+      "Assemblage et surpiqûre des lingettes de 10x10 cm",
+      "Couture des coulisses et passage du cordon pour pochon",
+    ],
+    extraits: [
+      "« Un premier projet gratifiant et écoresponsable à réaliser en moins d'une heure. »",
+    ],
+  },
+];
+
+// --- PATRONS DE COUTURE NUMÉRIQUES (PATTERNS) ---
+export const PATTERNS: Pattern[] = [
+  {
+    slug: "robe-alba",
+    nom: "La Robe Alba",
+    type: "Patron Robe d'Été / Demi-Saison",
+    description:
+      "Une robe féminine et vaporeuse avec décolleté V cœur sur le devant, manches courtes intégrées, coupe ample confortable, lien à nouer délicat au dos et grand volant dans le bas.",
+    prixEur: 14,
+    niveau: "Débutant / Intermédiaire",
+    tailles: "34 au 52 (Gradation incluse)",
+    versions: "2 versions (Longueur midi avec volant ou longueur courte)",
+    caracteristiques: [
+      "Décolleté V cœur devant & dos décolleté avec lien à nouer",
+      "Manches japonaises / intégrées sans emmanchure complexe",
+      "Coupe ample évasée pour une liberté de mouvement absolue",
+      "Grand volant froncé dans le bas",
+    ],
+    image: coursNappe,
+  },
+  {
+    slug: "pantalon-pedro",
+    nom: "Le Pantalon Pedro",
+    type: "Patron Pantalon Large / Crop",
+    description:
+      "Un pantalon fluide à coupe large élégante et longueur crop (7/8ème). Il comporte des pinces d'ajustement au dos, une braguette à zip invisible sur le côté et des poches plaquées optionnelles au dos.",
+    prixEur: 14,
+    niveau: "Intermédiaire",
+    tailles: "34 au 50",
+    versions: "Version A (Épuré sans poches) & Version B (Poches plaquées dos)",
+    caracteristiques: [
+      "Coupe large fluide & tendance longueur crop",
+      "Zip invisible côté avec ceinture nette",
+      "Poches plaquées optionnelles au dos",
+      "Livret explicatif + vidéo pas-à-pas offerte pour la pose du zip",
+    ],
+    image: coursChemisier,
+  },
+  {
+    slug: "robe-marguerite",
+    nom: "La Robe Marguerite Signature",
+    type: "Patron Robe Chemisier Boutonnée",
+    description:
+      "La robe chemisier emblématique de l'Atelier HONOR : patte de boutonnage complète sur le devant, décolleté V flatteur, fronces sous poitrine et aux épaules, ceinture marquée et manches 3/4.",
+    prixEur: 15,
+    niveau: "Intermédiaire / Avancé",
+    tailles: "34 au 48",
+    versions: "Manches longues avec poignets ou manches 3/4 froncées",
+    caracteristiques: [
+      "Boutonnage intégral devant (boutons nacre ou bois)",
+      "Fronces ajustées sous la poitrine et aux empiècements épaules",
+      "Poches invisibles prises dans la couture côté",
+      "Ligne ajustée à la taille avec ceinture intégrée",
+    ],
+    image: boutiqueNappes,
+  },
+];
 
 export type MadeToOrderItem = {
   slug: string;
