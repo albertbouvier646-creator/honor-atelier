@@ -1,136 +1,276 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+
+import { supabase } from "@/integrations/supabase/client";
+
+export interface Measurements {
+  stature?: string;
+  poitrine?: string;
+  taille?: string;
+  hanches?: string;
+  carrureDos?: string;
+}
 
 export interface UserProfile {
+  id: string;
   name: string;
   email: string;
   phone?: string;
   address?: string;
   preferredLanguage: string;
-  measurements?: {
-    stature?: string;
-    poitrine?: string;
-    taille?: string;
-    hanches?: string;
-    carrureDos?: string;
-  };
+  measurements: Measurements;
 }
 
 export interface EnrolledCourse {
+  id: string;
   slug: string;
   titre: string;
-  image: string;
+  packId: string | null;
+  format: string;
+  totalEur: number;
   progressPercent: number;
+  statut: string;
   enrolledDate: string;
 }
 
-export interface OrderItem {
+export type OrderStatus = "recu" | "en_confection" | "pret" | "expedie" | "livre" | "annule";
+
+export interface OrderRecord {
   id: string;
-  date: string;
-  itemNom: string;
-  fabricNom: string;
+  reference: string;
+  type: string;
+  intitule: string;
+  details: Record<string, unknown>;
   totalEur: number;
-  status: "En attente d'atelier" | "En confection" | "Prêt pour expédition" | "Livré";
+  statutPaiement: string;
+  statutAtelier: OrderStatus;
+  notes: string | null;
+  date: string;
 }
 
 interface AuthContextType {
   user: UserProfile | null;
+  loading: boolean;
   enrolledCourses: EnrolledCourse[];
-  orders: OrderItem[];
-  login: (email: string, name?: string) => void;
-  logout: () => void;
-  updateMeasurements: (m: UserProfile["measurements"]) => void;
+  orders: OrderRecord[];
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    nom: string,
+  ) => Promise<{ error: string | null; needsConfirmation: boolean }>;
+  signInWithGoogle: () => Promise<{ error: string | null }>;
+  signOut: () => Promise<void>;
+  updateProfile: (patch: Partial<Omit<UserProfile, "id" | "email">>) => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const DEMO_USER: UserProfile = {
-  name: "Éléonore de Saint-Germain",
-  email: "eleonore@example.com",
-  phone: "+33 6 12 34 56 78",
-  address: "14 Rue du Faubourg Saint-Honoré, 75008 Paris",
-  preferredLanguage: "fr",
-  measurements: {
-    stature: "172",
-    poitrine: "88",
-    taille: "66",
-    hanches: "92",
-    carrureDos: "38",
-  },
+type ProfileRow = {
+  id: string;
+  nom: string;
+  email: string;
+  telephone: string | null;
+  adresse: string | null;
+  langue: string;
+  mesures: unknown;
 };
 
-const DEMO_COURSES: EnrolledCourse[] = [
-  {
-    slug: "nappe-festonnee",
-    titre: "Maîtrise de la Nappe Festonnée",
-    image: "/src/assets/cours-nappe.jpg",
-    progressPercent: 65,
-    enrolledDate: "12/07/2026",
-  },
-  {
-    slug: "chemisier-signature",
-    titre: "Confection du Chemisier Signature",
-    image: "/src/assets/cours-chemisier.jpg",
-    progressPercent: 20,
-    enrolledDate: "28/07/2026",
-  },
-];
-
-const DEMO_ORDERS: OrderItem[] = [
-  {
-    id: "HNR-2026-8941",
-    date: "01/08/2026",
-    itemNom: "Nappe d'Atelier",
-    fabricNom: "Lin belge lavé",
-    totalEur: 380,
-    status: "En confection",
-  },
-];
+function toProfile(row: ProfileRow, fallbackEmail: string): UserProfile {
+  return {
+    id: row.id,
+    name: row.nom || fallbackEmail.split("@")[0] || "Client HONOR",
+    email: row.email || fallbackEmail,
+    ...(row.telephone ? { phone: row.telephone } : {}),
+    ...(row.adresse ? { address: row.adresse } : {}),
+    preferredLanguage: row.langue || "fr",
+    measurements: (row.mesures as Measurements | null) ?? {},
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [enrolledCourses] = useState<EnrolledCourse[]>(DEMO_COURSES);
-  const [orders] = useState<OrderItem[]>(DEMO_ORDERS);
+  const [orders, setOrders] = useState<OrderRecord[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("honor_user");
-      if (saved) {
-        setUser(JSON.parse(saved));
-      }
-    } catch {
-      // Ignorer
+  const loadData = useCallback(async (userId: string, email: string) => {
+    const [{ data: profile }, { data: orderRows }, { data: enrollRows }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+      supabase.from("orders").select("*").order("created_at", { ascending: false }),
+      supabase.from("enrollments").select("*").order("created_at", { ascending: false }),
+    ]);
+
+    if (profile) {
+      setUser(toProfile(profile as ProfileRow, email));
+    } else {
+      setUser({
+        id: userId,
+        name: email.split("@")[0] ?? "Client HONOR",
+        email,
+        preferredLanguage: "fr",
+        measurements: {},
+      });
     }
+
+    setOrders(
+      (orderRows ?? []).map((o) => ({
+        id: o.id,
+        reference: o.reference,
+        type: o.type,
+        intitule: o.intitule,
+        details: (o.details as Record<string, unknown>) ?? {},
+        totalEur: Number(o.total_eur),
+        statutPaiement: o.statut_paiement,
+        statutAtelier: o.statut_atelier as OrderStatus,
+        notes: o.notes,
+        date: o.created_at,
+      })),
+    );
+
+    setEnrolledCourses(
+      (enrollRows ?? []).map((e) => ({
+        id: e.id,
+        slug: e.course_slug,
+        titre: e.titre,
+        packId: e.pack_id,
+        format: e.format,
+        totalEur: Number(e.total_eur),
+        progressPercent: e.progression,
+        statut: e.statut,
+        enrolledDate: e.created_at,
+      })),
+    );
   }, []);
 
-  const login = (email: string, name?: string) => {
-    const newUser: UserProfile = {
-      ...DEMO_USER,
-      email,
-      name: name || DEMO_USER.name,
+  const refresh = useCallback(async () => {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      setUser(null);
+      setOrders([]);
+      setEnrolledCourses([]);
+      return;
+    }
+    await loadData(data.user.id, data.user.email ?? "");
+  }, [loadData]);
+
+  useEffect(() => {
+    let active = true;
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return;
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        setOrders([]);
+        setEnrolledCourses([]);
+        return;
+      }
+      if (session?.user) {
+        void loadData(session.user.id, session.user.email ?? "");
+      }
+    });
+
+    void (async () => {
+      await refresh();
+      if (active) setLoading(false);
+    })();
+
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
     };
-    setUser(newUser);
-    localStorage.setItem("honor_user", JSON.stringify(newUser));
-  };
+  }, [loadData, refresh]);
 
-  const logout = () => {
+  const signIn = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error: error ? error.message : null };
+  }, []);
+
+  const signUp = useCallback(async (email: string, password: string, nom: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: { nom },
+      },
+    });
+    return {
+      error: error ? error.message : null,
+      needsConfirmation: !error && !data.session,
+    };
+  }, []);
+
+  const signInWithGoogle = useCallback(async () => {
+    const { honorAuth } = await import("@/integrations/honor-auth/index");
+    const result = await honorAuth.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      return { error: "La connexion Google a échoué. Merci de réessayer." };
+    }
+    return { error: null };
+  }, []);
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem("honor_user");
-  };
+    setOrders([]);
+    setEnrolledCourses([]);
+  }, []);
 
-  const updateMeasurements = (m: UserProfile["measurements"]) => {
-    if (!user) return;
-    const updated = { ...user, measurements: m };
-    setUser(updated);
-    localStorage.setItem("honor_user", JSON.stringify(updated));
-  };
+  const updateProfile = useCallback(
+    async (patch: Partial<Omit<UserProfile, "id" | "email">>) => {
+      if (!user) return;
+      const payload: Record<string, unknown> = {};
+      if (patch.name !== undefined) payload["nom"] = patch.name;
+      if (patch.phone !== undefined) payload["telephone"] = patch.phone;
+      if (patch.address !== undefined) payload["adresse"] = patch.address;
+      if (patch.preferredLanguage !== undefined) payload["langue"] = patch.preferredLanguage;
+      if (patch.measurements !== undefined) payload["mesures"] = patch.measurements;
 
-  return (
-    <AuthContext.Provider
-      value={{ user, enrolledCourses, orders, login, logout, updateMeasurements }}
-    >
-      {children}
-    </AuthContext.Provider>
+      await supabase.from("profiles").upsert({ id: user.id, email: user.email, ...payload });
+      setUser({ ...user, ...patch, measurements: patch.measurements ?? user.measurements });
+    },
+    [user],
   );
+
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      enrolledCourses,
+      orders,
+      signIn,
+      signUp,
+      signInWithGoogle,
+      signOut,
+      updateProfile,
+      refresh,
+    }),
+    [
+      user,
+      loading,
+      enrolledCourses,
+      orders,
+      signIn,
+      signUp,
+      signInWithGoogle,
+      signOut,
+      updateProfile,
+      refresh,
+    ],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

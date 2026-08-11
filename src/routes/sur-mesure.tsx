@@ -1,6 +1,7 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, Scissors, ArrowRight, ArrowLeft } from "lucide-react";
 
 import { PageShell } from "@/components/PageShell";
@@ -12,7 +13,10 @@ import {
   formatEur,
 } from "@/lib/catalog";
 
-import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/lib/auth-context";
+import { createOrder } from "@/lib/orders";
+import { sendOrderConfirmationEmail } from "@/lib/notifications.functions";
+
 
 export const Route = createFileRoute("/sur-mesure")({
   head: () => ({
@@ -38,7 +42,8 @@ export const Route = createFileRoute("/sur-mesure")({
 const STEPS = ["Pièce", "Tissu", "Personnalisation", "Récapitulatif"];
 
 function SurMesurePage() {
-  const { addItem } = useCart();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [itemSlug, setItemSlug] = useState(MADE_TO_ORDER[0]!.slug);
   const [fabricId, setFabricId] = useState(FABRICS[0]!.id);
@@ -47,6 +52,9 @@ function SurMesurePage() {
   const [monogram, setMonogram] = useState("");
   const [notes, setNotes] = useState("");
   const [isOrdered, setIsOrdered] = useState(false);
+  const [pending, setPending] = useState(false);
+  const sendConfirmation = useServerFn(sendOrderConfirmationEmail);
+
 
   const item = MADE_TO_ORDER.find((i) => i.slug === itemSlug)!;
   const fabric = FABRICS.find((f) => f.id === fabricId)!;
@@ -74,13 +82,41 @@ function SurMesurePage() {
     setSizeId(next.tailles[0]!.id);
   };
 
-  const handleOrderValidation = () => {
-    setIsOrdered(true);
-    toast.success(`Commande "${item.nom}" enregistrée !`, {
-      description: "Votre récapitulatif a été transmis à l'atelier. Notre équipe vous recontactera sous 24h à commandes@honor-atelier.com pour valider le créneau de confection.",
-      duration: 7000,
-    });
+  const handleOrderValidation = async () => {
+    if (!user) {
+      void navigate({ to: "/auth", search: { mode: "connexion", redirect: "/sur-mesure" } });
+      toast.info("Connectez-vous pour valider votre commande sur mesure.");
+      return;
+    }
+
+    setPending(true);
+    try {
+      const order = await createOrder({
+        type: "sur-mesure",
+        intitule: `${item.nom} — ${fabric.nom}`,
+        totalEur: total,
+        lignes: lines.map((l) => ({ label: l.label, amount: l.amount })),
+        ...(notes.trim() ? { notes: notes.trim() } : {}),
+        meta: {
+          itemSlug,
+          fabricId,
+          sizeId,
+          finishId,
+          monogramme: monogram.trim().toUpperCase() || null,
+          delai: item.delai,
+        },
+      });
+      void sendConfirmation({ data: { reference: order.reference } }).catch(() => undefined);
+      setIsOrdered(true);
+      void navigate({ to: "/commande/succes", search: { ref: order.reference } });
+
+    } catch {
+      toast.error("Enregistrement de la commande impossible. Merci de réessayer.");
+    } finally {
+      setPending(false);
+    }
   };
+
 
   return (
     <PageShell>
@@ -293,11 +329,13 @@ function SurMesurePage() {
                   </p>
                   {!isOrdered ? (
                     <button
-                      onClick={handleOrderValidation}
-                      className="w-full px-8 py-5 bg-ink text-canvas text-[11px] uppercase tracking-[0.2em] hover:bg-accent transition-colors duration-300"
+                      onClick={() => void handleOrderValidation()}
+                      disabled={pending}
+                      className="w-full px-8 py-5 bg-ink text-canvas text-[11px] uppercase tracking-[0.2em] hover:bg-accent transition-colors duration-300 disabled:opacity-50"
                     >
-                      Valider ma commande sur mesure
+                      {pending ? "Enregistrement…" : "Valider ma commande sur mesure"}
                     </button>
+
                   ) : (
                     <div className="p-4 bg-accent/10 border border-accent/20 rounded-sm text-center">
                       <CheckCircle2 className="size-6 text-accent mx-auto mb-2" />

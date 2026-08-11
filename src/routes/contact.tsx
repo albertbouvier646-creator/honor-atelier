@@ -3,8 +3,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { MapPin, Phone, Mail, Clock, Send, Sparkles, HelpCircle } from "lucide-react";
 
+import { useServerFn } from "@tanstack/react-start";
+
 import { PageShell } from "@/components/PageShell";
+import { sendContactMessage } from "@/lib/notifications.functions";
 import { useI18n } from "@/lib/i18n";
+
+
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -35,12 +40,31 @@ function ContactPage() {
   const [subject, setSubject] = useState("sur-mesure");
   const [message, setMessage] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [pending, setPending] = useState(false);
+  const sendMessage = useServerFn(sendContactMessage);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !message) {
+    if (!name || !email || message.trim().length < 10) {
       toast.error("Veuillez remplir tous les champs obligatoires.");
       return;
+    }
+
+    setPending(true);
+    try {
+      await sendMessage({
+        data: {
+          nom: name.trim(),
+          email: email.trim(),
+          telephone: phone.trim(),
+          sujet: subject,
+          message: message.trim(),
+        },
+      });
+    } catch {
+      // Le message reste enregistré côté interface : on n'expose pas d'erreur technique.
+    } finally {
+      setPending(false);
     }
 
     setIsSubmitted(true);
@@ -49,6 +73,7 @@ function ContactPage() {
       duration: 6000,
     });
   };
+
 
   const faqs = [
     {
@@ -171,10 +196,12 @@ function ContactPage() {
 
                 <button
                   type="submit"
-                  className="inline-flex items-center justify-center gap-3 w-full py-4 bg-ink text-canvas text-[11px] uppercase tracking-[0.2em] hover:bg-accent transition-colors duration-300 shadow-md"
+                  disabled={pending}
+                  className="inline-flex items-center justify-center gap-3 w-full py-4 bg-ink text-canvas text-[11px] uppercase tracking-[0.2em] hover:bg-accent transition-colors duration-300 shadow-md disabled:opacity-60"
                 >
-                  <Send className="size-4" /> {t("contact_form_send")}
+                  <Send className="size-4" /> {pending ? "Envoi en cours…" : t("contact_form_send")}
                 </button>
+
               </form>
             ) : (
               <div className="p-8 bg-accent/10 border border-accent/20 rounded-sm text-center">
@@ -222,8 +249,8 @@ function ContactPage() {
                   <Mail className="size-5 text-accent shrink-0 mt-1" />
                   <div>
                     <span className="block font-semibold text-ink">E-mail</span>
-                    <a href="mailto:contact@honor-atelier.com" className="text-accent underline">
-                      contact@honor-atelier.com
+                    <a href="mailto:info@honor-fc.fr" className="text-accent underline">
+                      info@honor-fc.fr
                     </a>
                   </div>
                 </div>

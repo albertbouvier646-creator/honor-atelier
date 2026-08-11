@@ -1,10 +1,15 @@
-import { Link, createFileRoute, notFound } from "@tanstack/react-router";
+import { Link, createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
 
 import { PageShell } from "@/components/PageShell";
 import { getCourse, formatEur, type Course } from "@/lib/catalog";
+import { useAuth } from "@/lib/auth-context";
+import { createEnrollment, createOrder } from "@/lib/orders";
+import { sendOrderConfirmationEmail } from "@/lib/notifications.functions";
+
 
 export const Route = createFileRoute("/cours/$slug")({
   loader: ({ params }) => {
@@ -38,15 +43,50 @@ export const Route = createFileRoute("/cours/$slug")({
 
 function CoursDetail() {
   const { course } = Route.useLoaderData() as { course: Course };
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [pending, setPending] = useState(false);
+  const sendConfirmation = useServerFn(sendOrderConfirmationEmail);
 
-  const handleEnrollment = () => {
-    setIsSubmitted(true);
-    toast.success(`Votre réservation pour "${course.titre}" a été enregistrée !`, {
-      description: "Notre équipe vous envoie les instructions d'accès par email à inscriptions@honor-atelier.com.",
-      duration: 6000,
-    });
+  const handleEnrollment = async () => {
+    if (!user) {
+      void navigate({
+        to: "/auth",
+        search: { mode: "connexion", redirect: `/cours/${course.slug}` },
+      });
+      toast.info("Connectez-vous pour finaliser votre inscription.");
+      return;
+    }
+
+    setPending(true);
+    try {
+      const order = await createOrder({
+        type: "cours",
+        intitule: course.titre,
+        totalEur: course.prixEur,
+        lignes: [{ label: `${course.titre} — ${course.format}`, amount: course.prixEur }],
+        meta: { courseSlug: course.slug },
+      });
+      await createEnrollment({
+        courseSlug: course.slug,
+        titre: course.titre,
+        packId: null,
+        format: "classe",
+        totalEur: course.prixEur,
+        orderId: order.id,
+      });
+      void sendConfirmation({ data: { reference: order.reference } }).catch(() => undefined);
+      setIsSubmitted(true);
+      void navigate({ to: "/commande/succes", search: { ref: order.reference } });
+
+    } catch {
+      toast.error("Inscription impossible pour le moment. Merci de réessayer.");
+    } finally {
+      setPending(false);
+    }
   };
+
 
   return (
     <PageShell>
@@ -134,11 +174,13 @@ function CoursDetail() {
 
               {!isSubmitted ? (
                 <button
-                  onClick={handleEnrollment}
-                  className="w-full px-8 py-5 bg-ink text-canvas text-[11px] uppercase tracking-[0.2em] hover:bg-accent transition-colors duration-300"
+                  onClick={() => void handleEnrollment()}
+                  disabled={pending}
+                  className="w-full px-8 py-5 bg-ink text-canvas text-[11px] uppercase tracking-[0.2em] hover:bg-accent transition-colors duration-300 disabled:opacity-50"
                 >
-                  S'inscrire à ce cours
+                  {pending ? "Enregistrement…" : "S'inscrire à ce cours"}
                 </button>
+
               ) : (
                 <div className="p-4 bg-accent/10 border border-accent/20 rounded-sm text-center">
                   <CheckCircle2 className="size-6 text-accent mx-auto mb-2" />

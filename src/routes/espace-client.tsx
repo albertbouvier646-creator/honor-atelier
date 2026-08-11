@@ -1,445 +1,543 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  User,
-  Lock,
-  Mail,
+  BellRing,
   BookOpen,
-  Scissors,
-  Ruler,
-  LogOut,
-  Sparkles,
   CheckCircle2,
-  PackageCheck,
-  ArrowRight,
+  Loader2,
+  LogOut,
+  Package,
+  Ruler,
+  ShieldCheck,
+  UserCircle2,
 } from "lucide-react";
 
 import { PageShell } from "@/components/PageShell";
-import { useAuth } from "@/lib/auth-context";
-import { useI18n } from "@/lib/i18n";
+import { OrderHistory } from "@/components/OrderHistory";
+import { RecapPdfButton } from "@/components/RecapPdfButton";
+import { TrackingQr } from "@/components/TrackingQr";
+import { fetchMyNotifications, markNotificationsRead, type OrderEvent } from "@/lib/order-events";
+import { COURSE_STATUS_LABELS } from "@/lib/order-status";
 import { formatEur } from "@/lib/catalog";
+import { useAuth, type Measurements } from "@/lib/auth-context";
+import { ORDER_STATUS_LABELS, ORDER_TIMELINE, PAYMENT_STATUS_LABELS } from "@/lib/orders";
 
 export const Route = createFileRoute("/espace-client")({
   head: () => ({
     meta: [
-      { title: "Espace Client & Connexion — HONOR" },
+      { title: "Espace client — Cours, commandes & mesures | HONOR" },
       {
         name: "description",
         content:
-          "Accédez à votre espace client HONOR : suivi de vos cours de couture en ligne, suivi de confections sur-mesure et sauvegarde de vos mensurations.",
+          "Votre espace client HONOR : suivi de vos commandes sur mesure, inscriptions aux cours de couture, mesures d'atelier et coordonnées.",
       },
-      { property: "og:title", content: "Espace Client & Connexion — HONOR" },
+      { property: "og:title", content: "Espace client — HONOR" },
       {
         property: "og:description",
-        content: "Connexion et espace client de la maison HONOR.",
+        content: "Suivi de commandes, cours et mesures d'atelier dans votre espace client HONOR.",
       },
       { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: EspaceClientPage,
+  component: EspaceClient,
 });
 
-function EspaceClientPage() {
-  const { t } = useI18n();
-  const { user, login, logout, enrolledCourses, orders, updateMeasurements } = useAuth();
+const TABS = [
+  { id: "apercu", label: "Vue d'ensemble", icon: UserCircle2 },
+  { id: "commandes", label: "Commandes", icon: Package },
+  { id: "cours", label: "Mes cours", icon: BookOpen },
+  { id: "profil", label: "Profil & mesures", icon: Ruler },
+] as const;
 
-  const [activeTab, setActiveTab] = useState<"courses" | "orders" | "measurements">("courses");
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+const MEASURE_FIELDS: { key: keyof Measurements; label: string }[] = [
+  { key: "stature", label: "Stature (cm)" },
+  { key: "poitrine", label: "Tour de poitrine (cm)" },
+  { key: "taille", label: "Tour de taille (cm)" },
+  { key: "hanches", label: "Tour de hanches (cm)" },
+  { key: "carrureDos", label: "Carrure dos (cm)" },
+];
 
-  // Form states
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [registerName, setRegisterName] = useState("");
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
 
-  // Measurements form state
-  const [stature, setStature] = useState(user?.measurements?.stature || "172");
-  const [poitrine, setPoitrine] = useState(user?.measurements?.poitrine || "88");
-  const [taille, setTaille] = useState(user?.measurements?.taille || "66");
-  const [hanches, setHanches] = useState(user?.measurements?.hanches || "92");
-  const [carrureDos, setCarrureDos] = useState(user?.measurements?.carrureDos || "38");
+function EspaceClient() {
+  const { user, loading, orders, enrolledCourses, signOut, updateProfile } = useAuth();
+  const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("apercu");
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!loginEmail) {
-      toast.error("Veuillez saisir votre e-mail.");
-      return;
-    }
-    login(loginEmail, registerName);
-    toast.success("Connexion réussie ! Bienvenue dans votre espace client.");
-  };
+  if (loading) {
+    return (
+      <PageShell>
+        <section className="px-6 lg:px-8 py-32 bg-canvas text-center">
+          <Loader2 className="size-6 animate-spin text-accent mx-auto" />
+        </section>
+      </PageShell>
+    );
+  }
 
-  const handleDemoLogin = () => {
-    login("eleonore@example.com", "Éléonore de Saint-Germain");
-    toast.success("Connexion démo effectuée avec succès.");
-  };
+  if (!user) {
+    return (
+      <PageShell>
+        <section className="px-6 lg:px-8 py-24 bg-canvas">
+          <div className="max-w-lg mx-auto text-center border border-ink/10 bg-surface p-10 rounded-sm shadow-md">
+            <UserCircle2 className="size-8 text-accent mx-auto mb-5" />
+            <h1 className="font-serif text-3xl font-light mb-4">Votre espace client</h1>
+            <p className="text-sm text-ink/70 leading-relaxed mb-8">
+              Connectez-vous pour retrouver le suivi de vos commandes sur mesure, vos inscriptions
+              aux cours et vos mesures d'atelier.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                to="/auth"
+                search={{ mode: "connexion", redirect: "/espace-client" }}
+                className="px-8 py-4 bg-ink text-canvas text-[11px] uppercase tracking-[0.2em] hover:bg-accent transition-colors"
+              >
+                Se connecter
+              </Link>
+              <Link
+                to="/auth"
+                search={{ mode: "inscription", redirect: "/espace-client" }}
+                className="px-8 py-4 border border-ink/20 text-[11px] uppercase tracking-[0.2em] hover:border-accent hover:text-accent transition-colors"
+              >
+                Créer un compte
+              </Link>
+            </div>
+          </div>
+        </section>
+      </PageShell>
+    );
+  }
 
-  const handleSaveMeasurements = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateMeasurements({ stature, poitrine, taille, hanches, carrureDos });
-    toast.success("Vos mensurations ont été sauvegardées avec succès.");
-  };
+  const totalDepense = orders.reduce((s, o) => s + o.totalEur, 0);
 
   return (
     <PageShell>
-      {!user ? (
-        /* --- AUTH LOGIN / REGISTER SCREEN --- */
-        <section className="px-6 lg:px-8 py-20 bg-canvas min-h-[70vh] flex items-center">
-          <div className="max-w-md mx-auto w-full bg-surface border border-ink/10 p-8 sm:p-10 shadow-2xl rounded-sm">
-            <div className="text-center mb-8">
-              <span className="inline-flex items-center gap-2 px-3 py-1 bg-accent/10 text-accent text-[10px] uppercase tracking-[0.2em] font-medium rounded-full mb-3">
-                <Sparkles className="size-3" /> {t("client_title")}
-              </span>
-              <h1 className="font-serif text-3xl mb-2">
-                {authMode === "login" ? t("client_tab_login") : t("client_tab_register")}
-              </h1>
-              <p className="text-xs text-ink/65">{t("client_subtitle")}</p>
-            </div>
-
-            {/* Auth Tab switcher */}
-            <div className="flex border-b border-ink/10 mb-6 text-xs uppercase tracking-[0.15em]">
-              <button
-                onClick={() => setAuthMode("login")}
-                className={`flex-1 py-3 text-center border-b-2 font-medium transition-colors ${
-                  authMode === "login"
-                    ? "border-accent text-accent"
-                    : "border-transparent text-ink/50 hover:text-ink"
-                }`}
-              >
-                {t("client_tab_login")}
-              </button>
-              <button
-                onClick={() => setAuthMode("register")}
-                className={`flex-1 py-3 text-center border-b-2 font-medium transition-colors ${
-                  authMode === "register"
-                    ? "border-accent text-accent"
-                    : "border-transparent text-ink/50 hover:text-ink"
-                }`}
-              >
-                {t("client_tab_register")}
-              </button>
-            </div>
-
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              {authMode === "register" && (
-                <div>
-                  <label className="block text-[10px] uppercase tracking-[0.15em] text-ink/60 mb-1.5 font-medium">
-                    Nom & Prénom
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3.5 top-3.5 size-4 text-ink/40" />
-                    <input
-                      type="text"
-                      required
-                      value={registerName}
-                      onChange={(e) => setRegisterName(e.target.value)}
-                      placeholder="Éléonore de Saint-Germain"
-                      className="w-full bg-canvas border border-ink/15 pl-10 pr-4 py-3 text-sm focus:border-accent focus:outline-none rounded-sm"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-[10px] uppercase tracking-[0.15em] text-ink/60 mb-1.5 font-medium">
-                  {t("client_login_email")}
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-3.5 size-4 text-ink/40" />
-                  <input
-                    type="email"
-                    required
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="eleonore@example.com"
-                    className="w-full bg-canvas border border-ink/15 pl-10 pr-4 py-3 text-sm focus:border-accent focus:outline-none rounded-sm"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] uppercase tracking-[0.15em] text-ink/60 mb-1.5 font-medium">
-                  {t("client_login_pass")}
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-3.5 size-4 text-ink/40" />
-                  <input
-                    type="password"
-                    required
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-canvas border border-ink/15 pl-10 pr-4 py-3 text-sm focus:border-accent focus:outline-none rounded-sm"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-4 bg-ink text-canvas text-[11px] uppercase tracking-[0.2em] hover:bg-accent transition-colors duration-300 shadow-md mt-2"
-              >
-                {authMode === "login" ? t("client_login_btn") : t("client_tab_register")}
-              </button>
-            </form>
-
-            <div className="mt-6 pt-6 border-t border-ink/10 text-center">
-              <span className="text-xs text-ink/50 block mb-3">Compte de démonstration</span>
-              <button
-                onClick={handleDemoLogin}
-                className="w-full py-2.5 border border-accent/40 text-accent text-xs uppercase tracking-[0.15em] hover:bg-accent/10 transition-colors"
-              >
-                ⚡ {t("client_demo_login")}
-              </button>
-            </div>
+      <section className="px-6 lg:px-8 pt-14 pb-8 bg-canvas border-b border-ink/10">
+        <div className="max-w-6xl mx-auto flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <span className="text-[11px] uppercase tracking-[0.2em] text-accent block mb-3 font-medium">
+              Espace client
+            </span>
+            <h1 className="text-4xl md:text-5xl font-serif font-light leading-[0.95] mb-2">
+              {user.name}
+            </h1>
+            <p className="text-sm text-ink/60">{user.email}</p>
           </div>
-        </section>
-      ) : (
-        /* --- DASHBOARD CLIENT AREA --- */
-        <section className="px-6 lg:px-8 pt-12 pb-24 bg-canvas">
-          <div className="max-w-6xl mx-auto">
-            {/* Top Bar Client Info */}
-            <div className="bg-surface border border-ink/10 p-6 sm:p-8 rounded-sm shadow-md mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-              <div>
-                <span className="text-[10px] uppercase tracking-[0.2em] text-accent font-semibold block mb-1">
-                  {t("client_welcome")}
+          <button
+            onClick={() => {
+              void signOut();
+              toast.info("Vous êtes déconnecté.");
+            }}
+            className="inline-flex items-center gap-2 px-6 py-3 border border-ink/20 text-[11px] uppercase tracking-[0.2em] hover:border-accent hover:text-accent transition-colors"
+          >
+            <LogOut className="size-3.5" /> Déconnexion
+          </button>
+        </div>
+      </section>
+
+      <section className="px-6 lg:px-8 py-12 bg-canvas">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+            {[
+              ["Commandes", String(orders.length)],
+              ["Cours suivis", String(enrolledCourses.length)],
+              ["Total engagé", formatEur(totalDepense)],
+              ["Statut", "Client HONOR"],
+            ].map(([k, v]) => (
+              <div key={k} className="border border-ink/10 bg-surface p-6 rounded-sm">
+                <span className="block text-[10px] uppercase tracking-[0.2em] text-ink/50 mb-2">
+                  {k}
                 </span>
-                <h1 className="font-serif text-3xl sm:text-4xl text-ink font-light">{user.name}</h1>
-                <p className="text-xs text-ink/60 mt-1">{user.email}</p>
+                <span className="font-serif text-2xl font-light">{v}</span>
               </div>
-              <button
-                onClick={() => {
-                  logout();
-                  toast.info("Déconnexion effectuée.");
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2.5 border border-ink/20 text-[11px] uppercase tracking-[0.15em] text-ink/70 hover:border-ink hover:text-ink transition-colors self-start sm:self-auto"
-              >
-                <LogOut className="size-3.5" /> {t("client_logout")}
-              </button>
-            </div>
-
-            {/* Dashboard Tabs */}
-            <div className="flex flex-wrap gap-2 border-b border-ink/10 mb-8 pb-1 text-xs uppercase tracking-[0.15em]">
-              <button
-                onClick={() => setActiveTab("courses")}
-                className={`flex items-center gap-2 px-6 py-3 border-b-2 font-medium transition-colors ${
-                  activeTab === "courses"
-                    ? "border-accent text-accent bg-accent/5"
-                    : "border-transparent text-ink/60 hover:text-ink"
-                }`}
-              >
-                <BookOpen className="size-4" /> {t("client_tab_courses")} ({enrolledCourses.length})
-              </button>
-              <button
-                onClick={() => setActiveTab("orders")}
-                className={`flex items-center gap-2 px-6 py-3 border-b-2 font-medium transition-colors ${
-                  activeTab === "orders"
-                    ? "border-accent text-accent bg-accent/5"
-                    : "border-transparent text-ink/60 hover:text-ink"
-                }`}
-              >
-                <Scissors className="size-4" /> {t("client_tab_orders")} ({orders.length})
-              </button>
-              <button
-                onClick={() => setActiveTab("measurements")}
-                className={`flex items-center gap-2 px-6 py-3 border-b-2 font-medium transition-colors ${
-                  activeTab === "measurements"
-                    ? "border-accent text-accent bg-accent/5"
-                    : "border-transparent text-ink/60 hover:text-ink"
-                }`}
-              >
-                <Ruler className="size-4" /> {t("client_tab_measurements")}
-              </button>
-            </div>
-
-            {/* Tab 1: Enrolled Courses */}
-            {activeTab === "courses" && (
-              <div className="space-y-6">
-                {enrolledCourses.length === 0 ? (
-                  <div className="p-12 text-center bg-surface border border-ink/10 rounded-sm">
-                    <BookOpen className="size-10 text-ink/30 mx-auto mb-3" />
-                    <p className="text-ink/60 text-sm mb-4">{t("client_no_courses")}</p>
-                    <Link
-                      to="/cours"
-                      className="inline-block px-6 py-3 bg-ink text-canvas text-[10px] uppercase tracking-[0.2em]"
-                    >
-                      Découvrir les cours
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {enrolledCourses.map((c) => (
-                      <div
-                        key={c.slug}
-                        className="bg-surface border border-ink/10 p-6 rounded-sm flex flex-col justify-between shadow-sm"
-                      >
-                        <div>
-                          <div className="flex items-center justify-between text-xs text-ink/50 mb-3">
-                            <span>Inscrit le {c.enrolledDate}</span>
-                            <span className="text-accent font-medium">Accès à vie</span>
-                          </div>
-                          <h3 className="font-serif text-2xl mb-4">{c.titre}</h3>
-
-                          {/* Progress bar */}
-                          <div className="mb-6">
-                            <div className="flex justify-between text-xs text-ink/70 mb-1.5">
-                              <span>Progression</span>
-                              <span className="font-semibold text-accent">{c.progressPercent}%</span>
-                            </div>
-                            <div className="w-full bg-canvas border border-ink/10 h-2 rounded-full overflow-hidden">
-                              <div
-                                className="bg-accent h-full transition-all duration-500"
-                                style={{ width: `${c.progressPercent}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <Link
-                          to="/cours/$slug"
-                          params={{ slug: c.slug }}
-                          className="inline-flex items-center justify-center gap-2 w-full py-3 bg-ink text-canvas text-[10px] uppercase tracking-[0.2em] hover:bg-accent transition-colors"
-                        >
-                          Continuer la leçons <ArrowRight className="size-3.5" />
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Tab 2: Custom Tailoring Orders */}
-            {activeTab === "orders" && (
-              <div className="space-y-6">
-                {orders.length === 0 ? (
-                  <div className="p-12 text-center bg-surface border border-ink/10 rounded-sm">
-                    <Scissors className="size-10 text-ink/30 mx-auto mb-3" />
-                    <p className="text-ink/60 text-sm mb-4">{t("client_no_orders")}</p>
-                    <Link
-                      to="/sur-mesure"
-                      className="inline-block px-6 py-3 bg-ink text-canvas text-[10px] uppercase tracking-[0.2em]"
-                    >
-                      Commander une pièce sur-mesure
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {orders.map((o) => (
-                      <div
-                        key={o.id}
-                        className="bg-surface border border-ink/10 p-6 rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-sm"
-                      >
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="font-mono text-xs text-ink/50">{o.id}</span>
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-accent/10 text-accent text-[10px] uppercase tracking-[0.15em] font-medium rounded-full">
-                              <PackageCheck className="size-3" /> {o.status}
-                            </span>
-                          </div>
-                          <h3 className="font-serif text-2xl text-ink mb-1">{o.itemNom}</h3>
-                          <p className="text-xs text-ink/65">
-                            Tissu : {o.fabricNom} • Commande du {o.date}
-                          </p>
-                        </div>
-
-                        <div className="text-right">
-                          <span className="font-serif text-3xl font-light block mb-2">{formatEur(o.totalEur)}</span>
-                          <span className="text-xs text-ink/50">Délai estimé : 3 à 5 semaines</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Tab 3: Saved Measurements */}
-            {activeTab === "measurements" && (
-              <div className="bg-surface border border-ink/10 p-8 rounded-sm shadow-md">
-                <div className="mb-6">
-                  <h2 className="font-serif text-3xl italic mb-2">Profil de Mensurations</h2>
-                  <p className="text-sm text-ink/70 font-light">{t("client_measurements_desc")}</p>
-                </div>
-
-                <form onSubmit={handleSaveMeasurements} className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-[0.15em] text-ink/60 mb-2 font-medium">
-                        Stature / Hauteur (cm)
-                      </label>
-                      <input
-                        type="number"
-                        value={stature}
-                        onChange={(e) => setStature(e.target.value)}
-                        placeholder="170"
-                        className="w-full bg-canvas border border-ink/15 px-4 py-3 text-sm focus:border-accent focus:outline-none rounded-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-[0.15em] text-ink/60 mb-2 font-medium">
-                        Tour de Poitrine (cm)
-                      </label>
-                      <input
-                        type="number"
-                        value={poitrine}
-                        onChange={(e) => setPoitrine(e.target.value)}
-                        placeholder="88"
-                        className="w-full bg-canvas border border-ink/15 px-4 py-3 text-sm focus:border-accent focus:outline-none rounded-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-[0.15em] text-ink/60 mb-2 font-medium">
-                        Tour de Taille (cm)
-                      </label>
-                      <input
-                        type="number"
-                        value={taille}
-                        onChange={(e) => setTaille(e.target.value)}
-                        placeholder="66"
-                        className="w-full bg-canvas border border-ink/15 px-4 py-3 text-sm focus:border-accent focus:outline-none rounded-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-[0.15em] text-ink/60 mb-2 font-medium">
-                        Tour de Hanches (cm)
-                      </label>
-                      <input
-                        type="number"
-                        value={hanches}
-                        onChange={(e) => setHanches(e.target.value)}
-                        placeholder="92"
-                        className="w-full bg-canvas border border-ink/15 px-4 py-3 text-sm focus:border-accent focus:outline-none rounded-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase tracking-[0.15em] text-ink/60 mb-2 font-medium">
-                        Carrure Dos (cm)
-                      </label>
-                      <input
-                        type="number"
-                        value={carrureDos}
-                        onChange={(e) => setCarrureDos(e.target.value)}
-                        placeholder="38"
-                        className="w-full bg-canvas border border-ink/15 px-4 py-3 text-sm focus:border-accent focus:outline-none rounded-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="inline-flex items-center gap-2 px-8 py-4 bg-ink text-canvas text-[11px] uppercase tracking-[0.2em] hover:bg-accent transition-colors shadow-sm"
-                  >
-                    <CheckCircle2 className="size-4" /> {t("client_measurements_save")}
-                  </button>
-                </form>
-              </div>
-            )}
+            ))}
           </div>
-        </section>
-      )}
+
+          <nav className="flex flex-wrap gap-x-8 gap-y-3 border-b border-ink/10 mb-10 text-[11px] uppercase tracking-[0.2em]">
+            {TABS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className={`inline-flex items-center gap-2 pb-3 transition-colors ${
+                  tab === id
+                    ? "text-accent font-semibold border-b-2 border-accent"
+                    : "text-ink/50 hover:text-ink"
+                }`}
+              >
+                <Icon className="size-3.5" /> {label}
+              </button>
+            ))}
+          </nav>
+
+          {tab === "apercu" ? <Apercu /> : null}
+          {tab === "commandes" ? <Commandes /> : null}
+          {tab === "cours" ? <Cours /> : null}
+          {tab === "profil" ? <Profil /> : null}
+        </div>
+      </section>
     </PageShell>
+  );
+
+  function Apercu() {
+    const derniere = orders[0];
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="border border-ink/10 bg-surface p-8 rounded-sm">
+          <h2 className="font-serif text-2xl italic mb-5">Dernière commande</h2>
+          {derniere ? (
+            <>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-accent mb-2">
+                {derniere.reference}
+              </p>
+              <p className="font-serif text-xl mb-1">{derniere.intitule}</p>
+              <p className="text-xs text-ink/55 mb-5">{formatDate(derniere.date)}</p>
+              <Timeline statut={derniere.statutAtelier} />
+              <button
+                onClick={() => setTab("commandes")}
+                className="mt-6 text-[11px] uppercase tracking-[0.2em] text-accent underline"
+              >
+                Voir le suivi détaillé
+              </button>
+            </>
+          ) : (
+            <p className="text-sm text-ink/60 leading-relaxed">
+              Aucune commande pour l'instant.{" "}
+              <Link to="/sur-mesure" className="text-accent underline">
+                Configurer une pièce sur mesure
+              </Link>
+              .
+            </p>
+          )}
+        </div>
+
+        <div className="border border-ink/10 bg-surface p-8 rounded-sm">
+          <h2 className="font-serif text-2xl italic mb-5">Vos mesures d'atelier</h2>
+          {Object.values(user!.measurements).some(Boolean) ? (
+            <dl className="space-y-3">
+              {MEASURE_FIELDS.map(({ key, label }) => (
+                <div key={key} className="flex justify-between border-b border-ink/10 pb-2 text-sm">
+                  <dt className="text-ink/55">{label}</dt>
+                  <dd className="font-medium">{user!.measurements[key] || "—"}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p className="text-sm text-ink/60 leading-relaxed">
+              Renseignez vos mesures pour accélérer la confection de vos pièces sur mesure.
+            </p>
+          )}
+          <button
+            onClick={() => setTab("profil")}
+            className="mt-6 text-[11px] uppercase tracking-[0.2em] text-accent underline"
+          >
+            Mettre à jour
+          </button>
+        </div>
+
+        <div className="lg:col-span-2 border border-ink/10 bg-surface p-8 rounded-sm">
+          <h2 className="font-serif text-2xl italic mb-5 inline-flex items-center gap-3">
+            <BellRing className="size-5 text-accent" /> Notifications d'atelier
+          </h2>
+          <Notifications />
+        </div>
+      </div>
+    );
+  }
+
+  function Notifications() {
+    const [events, setEvents] = useState<OrderEvent[] | null>(null);
+
+    useEffect(() => {
+      let active = true;
+      void fetchMyNotifications().then((rows) => {
+        if (!active) return;
+        setEvents(rows);
+        void markNotificationsRead(rows.filter((e) => !e.lu).map((e) => e.id));
+      });
+      return () => {
+        active = false;
+      };
+    }, []);
+
+    if (events === null) {
+      return <Loader2 className="size-4 animate-spin text-accent" aria-label="Chargement" />;
+    }
+    if (events.length === 0) {
+      return (
+        <p className="text-sm text-ink/60 leading-relaxed">
+          Aucune notification pour l'instant. Vous serez averti à chaque étape : réception,
+          prise en atelier, confection et expédition.
+        </p>
+      );
+    }
+    return (
+      <ul className="space-y-4">
+        {events.map((e) => (
+          <li key={e.id} className="border-b border-ink/10 pb-4 last:border-0">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-ink/50 mb-1">
+              {new Date(e.createdAt).toLocaleString("fr-FR")}
+            </p>
+            <p className="text-sm font-medium">
+              {ORDER_STATUS_LABELS[e.etape] ?? COURSE_STATUS_LABELS[e.etape] ?? "Mise à jour"}
+              {!e.lu ? (
+                <span className="ml-2 text-[9px] uppercase tracking-[0.15em] text-accent">
+                  Nouveau
+                </span>
+              ) : null}
+            </p>
+            {e.message ? (
+              <p className="text-sm text-ink/65 leading-relaxed mt-1">{e.message}</p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  function Commandes() {
+    if (orders.length === 0) {
+      return (
+        <p className="text-sm text-ink/60">
+          Aucune commande enregistrée.{" "}
+          <Link to="/sur-mesure" className="text-accent underline">
+            Commencer une configuration
+          </Link>
+          .
+        </p>
+      );
+    }
+    return (
+      <div className="space-y-6">
+        {orders.map((o) => (
+          <article key={o.id} className="border border-ink/10 bg-surface p-8 rounded-sm">
+            <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+              <div>
+                <span className="text-[11px] uppercase tracking-[0.2em] text-accent block mb-2">
+                  {o.reference} • {o.type === "cours" ? "Cours" : "Sur mesure"}
+                </span>
+                <h3 className="font-serif text-2xl font-light">{o.intitule}</h3>
+                <p className="text-xs text-ink/55 mt-1">{formatDate(o.date)}</p>
+              </div>
+              <div className="text-right">
+                <span className="font-serif text-2xl font-light block">
+                  {formatEur(o.totalEur)}
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.15em] text-ink/55">
+                  {PAYMENT_STATUS_LABELS[o.statutPaiement] ?? o.statutPaiement}
+                </span>
+              </div>
+            </div>
+            <Timeline statut={o.statutAtelier} />
+            {Array.isArray((o.details as { lignes?: { label: string; amount: number | null }[] }).lignes) ? (
+              <dl className="mt-6 space-y-2">
+                {(o.details as { lignes: { label: string; amount: number | null }[] }).lignes.map(
+                  (l) => (
+                    <div
+                      key={l.label}
+                      className="flex justify-between gap-6 text-sm border-b border-ink/10 pb-2"
+                    >
+                      <dt className="text-ink/65">{l.label}</dt>
+                      <dd className="font-medium">
+                        {l.amount === null ? "—" : l.amount === 0 ? "Inclus" : formatEur(l.amount)}
+                      </dd>
+                    </div>
+                  ),
+                )}
+              </dl>
+            ) : null}
+            {o.notes ? (
+              <p className="mt-5 text-sm italic text-ink/60 bg-canvas border border-ink/5 p-3 rounded-sm">
+                Précisions : {o.notes}
+              </p>
+            ) : null}
+
+            <div className="mt-8 pt-6 border-t border-ink/10">
+              <h4 className="text-[10px] uppercase tracking-[0.18em] text-ink/50 mb-4">
+                Historique chronologique
+              </h4>
+              <OrderHistory orderId={o.id} />
+            </div>
+
+            <div className="mt-8">
+              <TrackingQr reference={o.reference} size={92} />
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <RecapPdfButton reference={o.reference} />
+              <Link
+                to="/suivi"
+                search={{ ref: o.reference }}
+                className="inline-flex items-center px-6 py-3 bg-ink text-canvas text-[11px] uppercase tracking-[0.2em] hover:bg-accent transition-colors"
+              >
+                Page de suivi
+              </Link>
+            </div>
+          </article>
+
+        ))}
+      </div>
+    );
+  }
+
+  function Cours() {
+    if (enrolledCourses.length === 0) {
+      return (
+        <p className="text-sm text-ink/60">
+          Aucune inscription pour l'instant.{" "}
+          <Link to="/cours" className="text-accent underline">
+            Découvrir les cours
+          </Link>
+          .
+        </p>
+      );
+    }
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {enrolledCourses.map((c) => (
+          <article key={c.id} className="border border-ink/10 bg-surface p-8 rounded-sm">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-accent block mb-3">
+              {c.format === "particulier" ? "Cours particulier" : "Cours en classe"}
+              {c.packId ? ` • ${c.packId.replace("-", " ")}` : ""}
+            </span>
+            <h3 className="font-serif text-2xl font-light mb-3">{c.titre}</h3>
+            <p className="text-xs text-ink/55 mb-5">
+              Inscrit le {formatDate(c.enrolledDate)} • {formatEur(c.totalEur)}
+            </p>
+            <div className="h-1.5 bg-ink/10 rounded-full overflow-hidden mb-2">
+              <div
+                className="h-full bg-accent transition-all"
+                style={{ width: `${c.progressPercent}%` }}
+              />
+            </div>
+            <span className="text-[10px] uppercase tracking-[0.15em] text-ink/50">
+              Progression {c.progressPercent}%
+            </span>
+            <Link
+              to="/cours/$slug"
+              params={{ slug: c.slug }}
+              className="block mt-6 text-[11px] uppercase tracking-[0.2em] text-accent underline"
+            >
+              Ouvrir la fiche du cours
+            </Link>
+          </article>
+        ))}
+      </div>
+    );
+  }
+
+  function Profil() {
+    const [nom, setNom] = useState(user!.name);
+    const [phone, setPhone] = useState(user!.phone ?? "");
+    const [address, setAddress] = useState(user!.address ?? "");
+    const [mesures, setMesures] = useState<Measurements>(user!.measurements);
+    const [saving, setSaving] = useState(false);
+
+    const save = async () => {
+      if (nom.trim().length < 2) {
+        toast.error("Merci d'indiquer votre nom complet.");
+        return;
+      }
+      setSaving(true);
+      try {
+        await updateProfile({
+          name: nom.trim(),
+          phone: phone.trim(),
+          address: address.trim(),
+          measurements: mesures,
+        });
+        toast.success("Profil mis à jour.");
+      } catch {
+        toast.error("Enregistrement impossible pour le moment.");
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="border border-ink/10 bg-surface p-8 rounded-sm space-y-5">
+          <h2 className="font-serif text-2xl italic mb-2">Coordonnées</h2>
+          {[
+            ["Nom complet", nom, setNom, 120],
+            ["Téléphone", phone, setPhone, 30],
+            ["Adresse de livraison", address, setAddress, 250],
+          ].map(([label, value, setter, max]) => (
+            <div key={label as string}>
+              <label className="block text-[11px] uppercase tracking-[0.2em] text-ink/60 mb-2 font-medium">
+                {label as string}
+              </label>
+              <input
+                value={value as string}
+                maxLength={max as number}
+                onChange={(e) => (setter as (v: string) => void)(e.target.value)}
+                className="w-full bg-canvas border border-ink/15 px-4 py-3.5 focus:border-accent focus:outline-none rounded-sm"
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="border border-ink/10 bg-surface p-8 rounded-sm">
+          <h2 className="font-serif text-2xl italic mb-5">Mesures d'atelier</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {MEASURE_FIELDS.map(({ key, label }) => (
+              <div key={key}>
+                <label className="block text-[10px] uppercase tracking-[0.15em] text-ink/60 mb-2">
+                  {label}
+                </label>
+                <input
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={mesures[key] ?? ""}
+                  onChange={(e) => setMesures((prev) => ({ ...prev, [key]: e.target.value }))}
+                  className="w-full bg-canvas border border-ink/15 px-4 py-3 focus:border-accent focus:outline-none rounded-sm"
+                />
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => void save()}
+            disabled={saving}
+            className="w-full mt-8 inline-flex items-center justify-center gap-2 px-8 py-4 bg-ink text-canvas text-[11px] uppercase tracking-[0.2em] hover:bg-accent transition-colors disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5" />}
+            Enregistrer
+          </button>
+          <p className="mt-5 text-xs text-ink/45 leading-relaxed inline-flex gap-2">
+            <ShieldCheck className="size-4 shrink-0 text-accent" />
+            Vos mesures sont visibles uniquement par vous et l'atelier HONOR.
+          </p>
+        </div>
+      </div>
+    );
+  }
+}
+
+function Timeline({ statut }: { statut: string }) {
+  if (statut === "annule") {
+    return (
+      <p className="text-[11px] uppercase tracking-[0.2em] text-ink/50">Commande annulée</p>
+    );
+  }
+  const current = ORDER_TIMELINE.indexOf(statut as (typeof ORDER_TIMELINE)[number]);
+  return (
+    <ol className="flex flex-wrap gap-x-6 gap-y-2 text-[10px] uppercase tracking-[0.15em]">
+      {ORDER_TIMELINE.map((step, i) => (
+        <li
+          key={step}
+          className={
+            i <= current ? "text-accent font-semibold" : "text-ink/30"
+          }
+        >
+          {i <= current ? "● " : "○ "}
+          {ORDER_STATUS_LABELS[step]}
+        </li>
+      ))}
+    </ol>
   );
 }

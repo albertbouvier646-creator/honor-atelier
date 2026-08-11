@@ -33,7 +33,7 @@ function Cgv() {
         <h2>1. Vendeur</h2>
         <p>
           HONOR. W. LTD, company number 17373245, DEPT 6977, 196 High Road, Wood Green, London N22
-          8HH, England — contact@honor-atelier.com.
+          8HH, England — info@honor-fc.fr.
         </p>
       </section>
 
@@ -97,7 +97,7 @@ function Cgv() {
         <p>
           Consommateur, vous disposez de 14 jours à compter de la réception du produit (ou de la
           conclusion du contrat pour les contenus numériques) pour vous rétracter, sans motif, en
-          écrivant à contact@honor-atelier.com.
+          écrivant à info@honor-fc.fr.
         </p>
         <p>Exceptions légales :</p>
         <ul>
@@ -140,7 +140,7 @@ function Cgv() {
       <section>
         <h2>9. Réclamations et litiges</h2>
         <p>
-          Toute réclamation est à adresser à contact@honor-atelier.com. Les présentes CGV sont
+          Toute réclamation est à adresser à info@honor-fc.fr. Les présentes CGV sont
           soumises au droit anglais, sans préjudice des dispositions protectrices impératives du
           pays de résidence du consommateur, qui peut également saisir les juridictions de son
           domicile ou recourir à un mode alternatif de règlement des litiges.

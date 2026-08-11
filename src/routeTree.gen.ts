@@ -10,19 +10,34 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ConditionsGeneralesDeVenteRouteImport } from './routes/conditions-generales-de-vente'
 import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as EspaceClientRouteImport } from './routes/espace-client'
 import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
+import { Route as SuiviRouteImport } from './routes/suivi'
 import { Route as SurMesureRouteImport } from './routes/sur-mesure'
+import { Route as CommandeAnnuleeRouteImport } from './routes/commande/annulee'
+import { Route as CommandeSuccesRouteImport } from './routes/commande/succes'
 import { Route as CoursIndexRouteImport } from './routes/cours/index'
 import { Route as CoursSlugRouteImport } from './routes/cours/$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConditionsGeneralesDeVenteRoute =
@@ -56,9 +71,24 @@ const MentionsLegalesRoute = MentionsLegalesRouteImport.update({
   path: '/mentions-legales',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SuiviRoute = SuiviRouteImport.update({
+  id: '/suivi',
+  path: '/suivi',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SurMesureRoute = SurMesureRouteImport.update({
   id: '/sur-mesure',
   path: '/sur-mesure',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommandeAnnuleeRoute = CommandeAnnuleeRouteImport.update({
+  id: '/commande/annulee',
+  path: '/commande/annulee',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommandeSuccesRoute = CommandeSuccesRouteImport.update({
+  id: '/commande/succes',
+  path: '/commande/succes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CoursIndexRoute = CoursIndexRouteImport.update({
@@ -74,38 +104,53 @@ const CoursSlugRoute = CoursSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
   '/conditions-generales-de-vente': typeof ConditionsGeneralesDeVenteRoute
   '/confidentialite': typeof ConfidentialiteRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
   '/espace-client': typeof EspaceClientRoute
   '/mentions-legales': typeof MentionsLegalesRoute
+  '/suivi': typeof SuiviRoute
   '/sur-mesure': typeof SurMesureRoute
+  '/commande/annulee': typeof CommandeAnnuleeRoute
+  '/commande/succes': typeof CommandeSuccesRoute
   '/cours/$slug': typeof CoursSlugRoute
   '/cours/': typeof CoursIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
   '/conditions-generales-de-vente': typeof ConditionsGeneralesDeVenteRoute
   '/confidentialite': typeof ConfidentialiteRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
   '/espace-client': typeof EspaceClientRoute
   '/mentions-legales': typeof MentionsLegalesRoute
+  '/suivi': typeof SuiviRoute
   '/sur-mesure': typeof SurMesureRoute
+  '/commande/annulee': typeof CommandeAnnuleeRoute
+  '/commande/succes': typeof CommandeSuccesRoute
   '/cours/$slug': typeof CoursSlugRoute
   '/cours': typeof CoursIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
   '/conditions-generales-de-vente': typeof ConditionsGeneralesDeVenteRoute
   '/confidentialite': typeof ConfidentialiteRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
   '/espace-client': typeof EspaceClientRoute
   '/mentions-legales': typeof MentionsLegalesRoute
+  '/suivi': typeof SuiviRoute
   '/sur-mesure': typeof SurMesureRoute
+  '/commande/annulee': typeof CommandeAnnuleeRoute
+  '/commande/succes': typeof CommandeSuccesRoute
   '/cours/$slug': typeof CoursSlugRoute
   '/cours/': typeof CoursIndexRoute
 }
@@ -113,50 +158,70 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
+    | '/auth'
     | '/conditions-generales-de-vente'
     | '/confidentialite'
     | '/contact'
     | '/cookies'
     | '/espace-client'
     | '/mentions-legales'
+    | '/suivi'
     | '/sur-mesure'
+    | '/commande/annulee'
+    | '/commande/succes'
     | '/cours/$slug'
     | '/cours/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
+    | '/auth'
     | '/conditions-generales-de-vente'
     | '/confidentialite'
     | '/contact'
     | '/cookies'
     | '/espace-client'
     | '/mentions-legales'
+    | '/suivi'
     | '/sur-mesure'
+    | '/commande/annulee'
+    | '/commande/succes'
     | '/cours/$slug'
     | '/cours'
   id:
     | '__root__'
     | '/'
+    | '/admin'
+    | '/auth'
     | '/conditions-generales-de-vente'
     | '/confidentialite'
     | '/contact'
     | '/cookies'
     | '/espace-client'
     | '/mentions-legales'
+    | '/suivi'
     | '/sur-mesure'
+    | '/commande/annulee'
+    | '/commande/succes'
     | '/cours/$slug'
     | '/cours/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  AuthRoute: typeof AuthRoute
   ConditionsGeneralesDeVenteRoute: typeof ConditionsGeneralesDeVenteRoute
   ConfidentialiteRoute: typeof ConfidentialiteRoute
   ContactRoute: typeof ContactRoute
   CookiesRoute: typeof CookiesRoute
   EspaceClientRoute: typeof EspaceClientRoute
   MentionsLegalesRoute: typeof MentionsLegalesRoute
+  SuiviRoute: typeof SuiviRoute
   SurMesureRoute: typeof SurMesureRoute
+  CommandeAnnuleeRoute: typeof CommandeAnnuleeRoute
+  CommandeSuccesRoute: typeof CommandeSuccesRoute
   CoursSlugRoute: typeof CoursSlugRoute
   CoursIndexRoute: typeof CoursIndexRoute
 }
@@ -168,6 +233,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/conditions-generales-de-vente': {
@@ -212,11 +291,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MentionsLegalesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/suivi': {
+      id: '/suivi'
+      path: '/suivi'
+      fullPath: '/suivi'
+      preLoaderRoute: typeof SuiviRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sur-mesure': {
       id: '/sur-mesure'
       path: '/sur-mesure'
       fullPath: '/sur-mesure'
       preLoaderRoute: typeof SurMesureRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/commande/annulee': {
+      id: '/commande/annulee'
+      path: '/commande/annulee'
+      fullPath: '/commande/annulee'
+      preLoaderRoute: typeof CommandeAnnuleeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/commande/succes': {
+      id: '/commande/succes'
+      path: '/commande/succes'
+      fullPath: '/commande/succes'
+      preLoaderRoute: typeof CommandeSuccesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cours/': {
@@ -238,26 +338,21 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  AuthRoute: AuthRoute,
   ConditionsGeneralesDeVenteRoute: ConditionsGeneralesDeVenteRoute,
   ConfidentialiteRoute: ConfidentialiteRoute,
   ContactRoute: ContactRoute,
   CookiesRoute: CookiesRoute,
   EspaceClientRoute: EspaceClientRoute,
   MentionsLegalesRoute: MentionsLegalesRoute,
+  SuiviRoute: SuiviRoute,
   SurMesureRoute: SurMesureRoute,
+  CommandeAnnuleeRoute: CommandeAnnuleeRoute,
+  CommandeSuccesRoute: CommandeSuccesRoute,
   CoursSlugRoute: CoursSlugRoute,
   CoursIndexRoute: CoursIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

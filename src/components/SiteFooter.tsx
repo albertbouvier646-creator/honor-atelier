@@ -36,9 +36,13 @@ export function SiteFooter() {
           <Link to="/contact" className="hover:text-accent transition-colors">
             {t("nav_contact")}
           </Link>
+          <Link to="/suivi" search={{ ref: "" }} className="hover:text-accent transition-colors">
+            Suivi de commande
+          </Link>
           <Link to="/espace-client" className="hover:text-accent transition-colors">
             {t("nav_account")}
           </Link>
+
         </div>
 
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[10px] uppercase tracking-[0.1em] text-canvas/40 border-t border-canvas/10 pt-8">

@@ -38,7 +38,7 @@ function MentionsLegales() {
           <li>
             Siège social : DEPT 6977, 196 High Road, Wood Green, London N22 8HH, England
           </li>
-          <li>Contact : contact@honor-atelier.com</li>
+          <li>Contact : info@honor-fc.fr</li>
           <li>Responsable de la publication : la direction de HONOR. W. LTD</li>
         </ul>
       </section>
@@ -87,7 +87,7 @@ function MentionsLegales() {
         <p>
           Le site et son contenu sont soumis au droit anglais, sans préjudice des droits impératifs
           reconnus aux consommateurs par la loi de leur pays de résidence. Toute réclamation peut
-          être adressée à contact@honor-atelier.com.
+          être adressée à info@honor-fc.fr.
         </p>
       </section>
     </LegalLayout>

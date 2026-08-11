@@ -10,6 +10,7 @@ import {
   saveConsent,
   type ConsentState,
 } from "@/lib/cookie-consent";
+import { applyConsentToScripts, logConsentChoice } from "@/lib/consent-scripts";
 
 export function CookieConsent() {
   const [visible, setVisible] = useState(false);
@@ -20,7 +21,9 @@ export function CookieConsent() {
     const stored = readConsent();
     if (stored) {
       setDraft(stored.categories);
+      applyConsentToScripts(stored.categories);
     } else {
+      applyConsentToScripts(DEFAULT_CONSENT);
       setVisible(true);
     }
 
@@ -35,9 +38,12 @@ export function CookieConsent() {
 
   const commit = (categories: ConsentState) => {
     saveConsent(categories);
+    applyConsentToScripts(categories);
+    void logConsentChoice(categories);
     setPanelOpen(false);
     setVisible(false);
   };
+
 
   if (!visible) return null;
 

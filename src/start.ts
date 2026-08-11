@@ -1,12 +1,19 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
+import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
 
-const errorMiddleware = createMiddleware().server(async ({ next }) => {
+const errorMiddleware = createMiddleware().server(async ({ next, handlerType }) => {
   try {
     return await next();
   } catch (error) {
     if (error != null && typeof error === "object" && "statusCode" in error) {
+      throw error;
+    }
+    // Server functions use TanStack's data protocol. Returning a full HTML
+    // document here makes the browser fail to decode the RPC response and
+    // incorrectly trips the root page error boundary.
+    if (handlerType === "serverFn") {
       throw error;
     }
     console.error(error);
@@ -25,5 +32,6 @@ const csrfMiddleware = createCsrfMiddleware({
 });
 
 export const startInstance = createStart(() => ({
+  functionMiddleware: [attachSupabaseAuth],
   requestMiddleware: [errorMiddleware, csrfMiddleware],
 }));

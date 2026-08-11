@@ -17,8 +17,20 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import boutiqueNappes from "@/assets/boutique-nappes.jpg";
 import { PageShell } from "@/components/PageShell";
-import { COURSES, EBOOKS, PATTERNS, formatEur } from "@/lib/catalog";
+import {
+  COURSES,
+  EBOOKS,
+  PATTERNS,
+  PRICING_TIERS,
+  HOURLY_GROUP_RATE_EUR,
+  PRIVATE_HOURLY_FROM_EUR,
+  DELICATE_FABRIC_SUPPLEMENT_EUR,
+  MAX_GROUP_SIZE,
+  FABRIC_GLOSSARY,
+  formatEur,
+} from "@/lib/catalog";
 import { useCart } from "@/lib/cart-context";
 
 export const Route = createFileRoute("/cours/")({
@@ -247,6 +259,83 @@ function CoursIndex() {
                     </div>
                   </article>
                 ))}
+              </div>
+
+              {/* GRILLE TARIFAIRE */}
+              <div className="mt-20 border-t border-ink/10 pt-16">
+                <div className="text-center max-w-2xl mx-auto mb-10">
+                  <h2 className="font-serif text-3xl mb-3">Grille Tarifaire des Cours</h2>
+                  <p className="text-sm text-ink/70 font-light">
+                    Cours en classe de {MAX_GROUP_SIZE} personnes maximum, à l'heure ou en forfait.
+                    Tarif horaire de référence : {formatEur(HOURLY_GROUP_RATE_EUR)} l'heure.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+                  {PRICING_TIERS.map((tier) => (
+                    <div
+                      key={tier.id}
+                      className="bg-surface border border-ink/10 rounded-sm p-6 flex flex-col justify-between shadow-sm hover:border-accent/40 transition-colors"
+                    >
+                      <div>
+                        <span className="text-[10px] uppercase tracking-[0.15em] text-accent font-semibold block mb-2">
+                          {tier.duree}
+                        </span>
+                        <h3 className="font-serif text-xl text-ink mb-3">{tier.label}</h3>
+                      </div>
+                      <div className="space-y-2">
+                        <span className="font-serif text-3xl text-ink font-light block">
+                          {tier.prixEur === null
+                            ? `À partir de ${formatEur(PRIVATE_HOURLY_FROM_EUR)} / h`
+                            : formatEur(tier.prixEur)}
+                        </span>
+                        <p className="text-xs text-ink/60 font-light leading-relaxed">{tier.note}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 bg-canvas border border-accent/30 rounded-sm p-6 flex items-start gap-4">
+                  <Sparkles className="size-5 text-accent shrink-0 mt-0.5" />
+                  <p className="text-sm text-ink/80 font-light leading-relaxed">
+                    <strong className="font-semibold text-ink">
+                      Supplément matières délicates ou peu courantes :
+                    </strong>{" "}
+                    {formatEur(DELICATE_FABRIC_SUPPLEMENT_EUR)} par heure de cours (soie, mousseline,
+                    dentelle, cuir, mailles techniques, toiles enduites…). Ce supplément couvre le
+                    matériel spécifique, les aiguilles et pieds presseurs dédiés et l'accompagnement
+                    technique renforcé.
+                  </p>
+                </div>
+              </div>
+
+              {/* GLOSSAIRE DES MATIÈRES */}
+              <div className="mt-20 border-t border-ink/10 pt-16">
+                <div className="text-center max-w-2xl mx-auto mb-10">
+                  <h2 className="font-serif text-3xl mb-3">Tissus & Matériaux Peu Courants</h2>
+                  <p className="text-sm text-ink/70 font-light">
+                    Définition des étoffes qui exigent une technique particulière — et donc le
+                    supplément d'apprentissage de {formatEur(DELICATE_FABRIC_SUPPLEMENT_EUR)} par heure.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {FABRIC_GLOSSARY.map((f) => (
+                    <article
+                      key={f.nom}
+                      className="bg-surface border border-ink/10 rounded-sm p-6 space-y-3 shadow-sm hover:border-accent/40 transition-colors"
+                    >
+                      <h3 className="font-serif text-lg text-ink">{f.nom}</h3>
+                      <p className="text-sm text-ink/75 font-light leading-relaxed">{f.definition}</p>
+                      <p className="text-xs text-ink/60 leading-relaxed border-t border-ink/10 pt-3">
+                        <span className="uppercase tracking-[0.15em] text-accent font-semibold text-[10px] block mb-1">
+                          Particularité technique
+                        </span>
+                        {f.particularite}
+                      </p>
+                    </article>
+                  ))}
+                </div>
               </div>
             </div>
           )}

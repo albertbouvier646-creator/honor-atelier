@@ -48,6 +48,163 @@ export type Pattern = {
   image: string;
 };
 
+// --- TARIFICATION DES COURS ---
+export const HOURLY_GROUP_RATE_EUR = 285;
+export const PRIVATE_HOURLY_FROM_EUR = 300;
+export const DELICATE_FABRIC_SUPPLEMENT_EUR = 100;
+export const MAX_GROUP_SIZE = 6;
+
+export type PricingTier = {
+  id: string;
+  label: string;
+  duree: string;
+  prixEur: number | null;
+  note: string;
+};
+
+export const PRICING_TIERS: PricingTier[] = [
+  {
+    id: "heure",
+    label: "Cours en classe — à l'heure",
+    duree: "1 heure",
+    prixEur: HOURLY_GROUP_RATE_EUR,
+    note: `Classe jusqu'à ${MAX_GROUP_SIZE} personnes`,
+  },
+  {
+    id: "forfait-2h",
+    label: "Forfait 2 heures",
+    duree: "2 heures",
+    prixEur: 550,
+    note: `Classe jusqu'à ${MAX_GROUP_SIZE} personnes`,
+  },
+  {
+    id: "forfait-3h",
+    label: "Forfait 3 heures",
+    duree: "3 heures",
+    prixEur: 810,
+    note: `Classe jusqu'à ${MAX_GROUP_SIZE} personnes`,
+  },
+  {
+    id: "forfait-4h",
+    label: "Forfait 4 heures",
+    duree: "4 heures",
+    prixEur: 1050,
+    note: `Classe jusqu'à ${MAX_GROUP_SIZE} personnes`,
+  },
+  {
+    id: "pack-10h",
+    label: "Pack 10 heures",
+    duree: "10 heures",
+    prixEur: 2500,
+    note: `Au choix : classe jusqu'à ${MAX_GROUP_SIZE} personnes ou cours particulier`,
+  },
+  {
+    id: "pack-15h",
+    label: "Pack 15 heures",
+    duree: "15 heures",
+    prixEur: 4000,
+    note: `Au choix : classe jusqu'à ${MAX_GROUP_SIZE} personnes ou cours particulier`,
+  },
+  {
+    id: "pack-20h",
+    label: "Pack 20 heures",
+    duree: "20 heures",
+    prixEur: 4900,
+    note: `Au choix : classe jusqu'à ${MAX_GROUP_SIZE} personnes ou cours particulier`,
+  },
+  {
+    id: "particulier",
+    label: "Cours particulier",
+    duree: "Sur demande",
+    prixEur: null,
+    note: `Tarif proposé librement par le client — l'heure commence à ${PRIVATE_HOURLY_FROM_EUR} €`,
+  },
+];
+
+// --- GLOSSAIRE DES TISSUS & MATIÈRES PEU COURANTES ---
+export type FabricDefinition = {
+  nom: string;
+  definition: string;
+  particularite: string;
+};
+
+export const FABRIC_GLOSSARY: FabricDefinition[] = [
+  {
+    nom: "Soie sauvage (Tussah)",
+    definition:
+      "Soie issue de cocons récoltés à l'état sauvage, au fil irrégulier et légèrement flammé, d'un aspect mat et vivant.",
+    particularite:
+      "Marque à l'aiguille et à l'eau : piquer avec une aiguille fine 60/8 et repasser toujours sur l'envers avec une pattemouille.",
+  },
+  {
+    nom: "Mousseline de soie",
+    definition:
+      "Étoffe extrêmement fine et transparente, tissée en fils très torsadés, quasi impalpable.",
+    particularite:
+      "Glissante et fuyante : coupe entre deux feuilles de papier de soie et coutures anglaises obligatoires.",
+  },
+  {
+    nom: "Organza",
+    definition:
+      "Tissu transparent et raide en soie ou synthétique, utilisé pour donner du volume et de la structure.",
+    particularite: "Se griffe facilement ; les épingles laissent des trous définitifs.",
+  },
+  {
+    nom: "Crêpe de Chine",
+    definition:
+      "Tissu au grain finement granuleux obtenu par surtorsion des fils, au tombé fluide et discret.",
+    particularite: "Se détend en longueur : laisser reposer 24 h avant l'ourlet.",
+  },
+  {
+    nom: "Velours de coton & velours ras",
+    definition: "Étoffe à poils dressés créant une profondeur de couleur changeante.",
+    particularite:
+      "Sens du poil impératif sur toutes les pièces ; repassage uniquement sur planche à aiguilles.",
+  },
+  {
+    nom: "Dentelle de Calais / guipure",
+    definition:
+      "Tissu ajouré à motifs, tissé ou brodé, sans droit-fil régulier apparent.",
+    particularite: "Placement des motifs et raccords à la main, finitions par appliqué.",
+  },
+  {
+    nom: "Lin belge lavé",
+    definition:
+      "Lin tissé puis lavé pour assouplir la fibre, au grain naturel et à l'aspect froissé noble.",
+    particularite: "Rétrécit de 3 à 5 % : décatir systématiquement avant la coupe.",
+  },
+  {
+    nom: "Laine 120's & flanelle fine",
+    definition:
+      "Laine peignée aux fils très fins (titrage 120), souple, thermorégulante et résistante.",
+    particularite: "Mise en forme au fer vapeur (moulage) plutôt que par des pinces multiples.",
+  },
+  {
+    nom: "Jersey & mailles techniques",
+    definition:
+      "Tricot élastique en boucles, extensible dans une ou deux directions.",
+    particularite:
+      "Aiguille jersey à pointe boule, point extensible ou surjeteuse ; jamais de point droit rigide.",
+  },
+  {
+    nom: "Cuir & suédine",
+    definition: "Peau tannée ou son imitation microfibre, non tissée et non extensible.",
+    particularite:
+      "Ne se découd pas : chaque piqûre est définitive. Pied téflon, aiguille cuir, collage des marges.",
+  },
+  {
+    nom: "Toile enduite & tissu déperlant",
+    definition: "Support coton ou polyester recouvert d'une couche imperméabilisante.",
+    particularite: "Ne se repasse pas à chaud ; pinces à couture au lieu d'épingles.",
+  },
+  {
+    nom: "Coton bio certifié GOTS",
+    definition:
+      "Coton cultivé sans intrant chimique, dont toute la chaîne de transformation est certifiée GOTS.",
+    particularite: "Toucher plus vivant et rétrécissement au premier lavage à prévoir.",
+  },
+];
+
 // --- COURS INDIVIDUELS & FORMATIONS ---
 export const COURSES: Course[] = [
   {
@@ -59,8 +216,8 @@ export const COURSES: Course[] = [
     image: coursMatieres,
     niveau: "Débutant",
     lecons: 4,
-    duree: "2h individuelles",
-    prixEur: 65,
+    duree: "Forfait 2h en classe",
+    prixEur: 550,
     fournituresIncluses: true,
     prochaineSession: "Sur RDV individuel",
     places: 1,
@@ -86,8 +243,8 @@ export const COURSES: Course[] = [
     image: coursNappe,
     niveau: "Débutant",
     lecons: 4,
-    duree: "2h individuelles",
-    prixEur: 70,
+    duree: "Forfait 2h en classe",
+    prixEur: 550,
     fournituresIncluses: true,
     prochaineSession: "Sur RDV individuel",
     places: 1,
@@ -113,8 +270,8 @@ export const COURSES: Course[] = [
     image: boutiqueNappes,
     niveau: "Débutant",
     lecons: 5,
-    duree: "2h individuelles",
-    prixEur: 75,
+    duree: "Forfait 2h en classe",
+    prixEur: 550,
     fournituresIncluses: true,
     prochaineSession: "Sur RDV individuel",
     places: 1,
@@ -140,8 +297,8 @@ export const COURSES: Course[] = [
     image: coursChemisier,
     niveau: "Intermédiaire",
     lecons: 8,
-    duree: "Forfait 4h ou 6h au choix",
-    prixEur: 160,
+    duree: "Forfait 4h en classe",
+    prixEur: 1050,
     fournituresIncluses: false,
     prochaineSession: "Sur RDV individuel / Stages week-end",
     places: 1,
