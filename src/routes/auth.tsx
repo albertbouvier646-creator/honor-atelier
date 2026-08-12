@@ -72,8 +72,12 @@ function AuthPage() {
           toast.error("Merci d'indiquer votre nom complet.");
           return;
         }
-        if (password.length < 8) {
-          toast.error("Le mot de passe doit contenir au moins 8 caractères.");
+        if (password.length < 10) {
+          toast.error("Le mot de passe doit contenir au moins 10 caractères.");
+          return;
+        }
+        if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+          toast.error("Le mot de passe doit contenir au moins une lettre et un chiffre.");
           return;
         }
         const { error, needsConfirmation } = await signUp(email.trim(), password, nom.trim());
