@@ -37,13 +37,7 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
     const SUPABASE_PUBLISHABLE_KEY = process.env['SUPABASE_PUBLISHABLE_KEY'];
 
     if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-      const missing = [
-        ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
-        ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
-      ];
-      const message = `Variable(s) d'environnement Supabase manquante(s) : ${missing.join(', ')}. Veuillez les configurer dans votre fichier .env.`;
-      console.error(`[Supabase] ${message}`);
-      throw new Error(message);
+      throw new Error('Unauthorized: Service d\'authentification Supabase non configuré sur le serveur');
     }
     
     const request = getRequest();
