@@ -27,13 +27,7 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 /** Retourne true si les variables d'environnement Supabase sont disponibles. */
 export function isSupabaseConfigured(): boolean {
-  const url =
-    (typeof import.meta !== 'undefined' ? import.meta.env?.['VITE_SUPABASE_URL'] : undefined) ||
-    (typeof process !== 'undefined' ? process.env?.['SUPABASE_URL'] : undefined);
-  const key =
-    (typeof import.meta !== 'undefined' ? import.meta.env?.['VITE_SUPABASE_PUBLISHABLE_KEY'] : undefined) ||
-    (typeof process !== 'undefined' ? process.env?.['SUPABASE_PUBLISHABLE_KEY'] : undefined);
-  return Boolean(url && key);
+  return true;
 }
 
 function tryCreateSupabaseClient(): ReturnType<typeof createClient<Database>> | null {
@@ -41,10 +35,12 @@ function tryCreateSupabaseClient(): ReturnType<typeof createClient<Database>> | 
   // Fall back to process.env for SSR (server-side rendering)
   const SUPABASE_URL =
     (typeof import.meta !== 'undefined' ? import.meta.env?.['VITE_SUPABASE_URL'] : undefined) ||
-    (typeof process !== 'undefined' ? process.env?.['SUPABASE_URL'] : undefined);
+    (typeof process !== 'undefined' ? process.env?.['SUPABASE_URL'] : undefined) ||
+    'https://xsyrtzyuztsyixnzuvgp.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY =
     (typeof import.meta !== 'undefined' ? import.meta.env?.['VITE_SUPABASE_PUBLISHABLE_KEY'] : undefined) ||
-    (typeof process !== 'undefined' ? process.env?.['SUPABASE_PUBLISHABLE_KEY'] : undefined);
+    (typeof process !== 'undefined' ? process.env?.['SUPABASE_PUBLISHABLE_KEY'] : undefined) ||
+    'sb_publishable_Da5hQQV9bellFnlaLo40Ig_e7vimkZU';
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [
