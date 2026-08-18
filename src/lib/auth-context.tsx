@@ -102,54 +102,71 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadData = useCallback(async (userId: string, email: string) => {
-    const [{ data: profile }, { data: orderRows }, { data: enrollRows }] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
-      supabase.from("orders").select("*").order("created_at", { ascending: false }),
-      supabase.from("enrollments").select("*").order("created_at", { ascending: false }),
-    ]);
+  const loadData = useCallback(
+    async (userId: string, email: string, metadata?: Record<string, unknown>) => {
+      const [{ data: profile }, { data: orderRows }, { data: enrollRows }] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+        supabase.from("orders").select("*").order("created_at", { ascending: false }),
+        supabase.from("enrollments").select("*").order("created_at", { ascending: false }),
+      ]);
 
-    if (profile) {
-      setUser(toProfile(profile as ProfileRow, email));
-    } else {
-      setUser({
-        id: userId,
-        name: email.split("@")[0] ?? "Client HONOR",
-        email,
-        preferredLanguage: "fr",
-        measurements: {},
-      });
-    }
+      const fallbackName =
+        (metadata?.["full_name"] as string | undefined) ||
+        (metadata?.["name"] as string | undefined) ||
+        email.split("@")[0] ||
+        "Client HONOR";
 
-    setOrders(
-      (orderRows ?? []).map((o) => ({
-        id: o.id,
-        reference: o.reference,
-        type: o.type,
-        intitule: o.intitule,
-        details: (o.details as Record<string, unknown>) ?? {},
-        totalEur: Number(o.total_eur),
-        statutPaiement: o.statut_paiement,
-        statutAtelier: o.statut_atelier as OrderStatus,
-        notes: o.notes,
-        date: o.created_at,
-      })),
-    );
+      if (profile) {
+        setUser(toProfile(profile as ProfileRow, email));
+      } else {
+        const newProfile: UserProfile = {
+          id: userId,
+          name: fallbackName,
+          email,
+          preferredLanguage: "fr",
+          measurements: {},
+        };
+        setUser(newProfile);
+        // Sauvegarder automatiquement le profil créé via OAuth Google
+        void supabase.from("profiles").upsert({
+          id: userId,
+          email,
+          nom: fallbackName,
+          langue: "fr",
+        });
+      }
 
-    setEnrolledCourses(
-      (enrollRows ?? []).map((e) => ({
-        id: e.id,
-        slug: e.course_slug,
-        titre: e.titre,
-        packId: e.pack_id,
-        format: e.format,
-        totalEur: Number(e.total_eur),
-        progressPercent: e.progression,
-        statut: e.statut,
-        enrolledDate: e.created_at,
-      })),
-    );
-  }, []);
+      setOrders(
+        (orderRows ?? []).map((o) => ({
+          id: o.id,
+          reference: o.reference,
+          type: o.type,
+          intitule: o.intitule,
+          details: (o.details as Record<string, unknown>) ?? {},
+          totalEur: Number(o.total_eur),
+          statutPaiement: o.statut_paiement,
+          statutAtelier: o.statut_atelier as OrderStatus,
+          notes: o.notes,
+          date: o.created_at,
+        })),
+      );
+
+      setEnrolledCourses(
+        (enrollRows ?? []).map((e) => ({
+          id: e.id,
+          slug: e.course_slug,
+          titre: e.titre,
+          packId: e.pack_id,
+          format: e.format,
+          totalEur: Number(e.total_eur),
+          progressPercent: e.progression,
+          statut: e.statut,
+          enrolledDate: e.created_at,
+        })),
+      );
+    },
+    [],
+  );
 
   const refresh = useCallback(async () => {
     const { data } = await supabase.auth.getUser();
@@ -159,7 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setEnrolledCourses([]);
       return;
     }
-    await loadData(data.user.id, data.user.email ?? "");
+    await loadData(data.user.id, data.user.email ?? "", data.user.user_metadata);
   }, [loadData]);
 
   useEffect(() => {
@@ -174,7 +191,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (session?.user) {
-        void loadData(session.user.id, session.user.email ?? "");
+        void loadData(session.user.id, session.user.email ?? "", session.user.user_metadata);
+
+        // Nettoyage de l'URL hash OAuth (#access_token=...) et redirection vers l'Espace Client
+        if (typeof window !== "undefined" && window.location.hash.includes("access_token=")) {
+          const target = window.location.pathname === "/auth" || window.location.pathname === "/" ? "/espace-client" : window.location.pathname;
+          window.history.replaceState(null, "", target);
+          if (window.location.pathname !== "/espace-client" && (window.location.pathname === "/auth" || window.location.pathname === "/")) {
+            window.location.href = "/espace-client";
+          }
+        }
       }
     });
 
